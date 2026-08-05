@@ -12,6 +12,7 @@ using MFilesExporter.Reporting.DependencyInjection;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.Extensions.Hosting;
+using Microsoft.Extensions.Hosting.WindowsServices;
 using Microsoft.Extensions.Options;
 using Serilog;
 
@@ -19,7 +20,21 @@ Log.Logger = SerilogBootstrap.CreateBootstrapLogger();
 
 try
 {
-    var builder = Host.CreateApplicationBuilder(args);
+    // WindowsServiceHelpers.IsWindowsService() returns true iff started by the
+    // Service Control Manager. Under `sc start` we auto-configure the host with
+    // Windows Service integration; under `dotnet run` we stay a plain console.
+    var isWindowsService = WindowsServiceHelpers.IsWindowsService();
+
+    var options = new HostApplicationBuilderSettings
+    {
+        Args = args,
+        // Services start with %WINDIR%\System32 as their cwd; force the content
+        // root back to the executable directory so relative paths in
+        // appsettings resolve the way developers expect.
+        ContentRootPath = isWindowsService ? AppContext.BaseDirectory : null,
+    };
+
+    var builder = Host.CreateApplicationBuilder(options);
 
     builder.Configuration
         .SetBasePath(AppContext.BaseDirectory)
@@ -27,6 +42,14 @@ try
         .AddJsonFile($"appsettings.{builder.Environment.EnvironmentName}.json", optional: true, reloadOnChange: true)
         .AddEnvironmentVariables(prefix: "MFILESEXPORTER_")
         .AddCommandLine(args);
+
+    if (isWindowsService)
+    {
+        builder.Services.AddWindowsService(o =>
+        {
+            o.ServiceName = "MFilesExporter";
+        });
+    }
 
     // Configuration must load and validate before anything else touches it.
     builder.Services.AddExporterConfiguration(builder.Configuration);
@@ -63,7 +86,11 @@ try
     // Fail fast on invalid options.
     _ = host.Services.GetRequiredService<IOptions<ExporterOptions>>().Value;
 
-    Log.Information("MFilesExporter starting in {Environment}", host.Services.GetRequiredService<IHostEnvironment>().EnvironmentName);
+    Log.Information(
+        "MFilesExporter starting in {Environment} (mode={Mode})",
+        host.Services.GetRequiredService<IHostEnvironment>().EnvironmentName,
+        isWindowsService ? "WindowsService" : "Console");
+
     await host.RunAsync().ConfigureAwait(false);
     return 0;
 }

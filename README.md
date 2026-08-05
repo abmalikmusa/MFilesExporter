@@ -137,6 +137,9 @@ Every subsystem has a dedicated design doc.
 - [Monitoring](docs/monitoring.md) — OpenTelemetry + Prometheus + Grafana
 - [Console dashboard](docs/console-dashboard.md) — Spectre.Console live view
 
+**Deployment**
+- [Windows Service](docs/deployment-windows-service.md) — publish + install + service account + troubleshooting
+
 ---
 
 ## Configuration
