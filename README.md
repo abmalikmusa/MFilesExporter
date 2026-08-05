@@ -16,6 +16,12 @@ observable.
 
 ## Quick start
 
+**Deploying to a Windows Server?** Follow the full runbook:
+**[docs/deployment-runbook.md](docs/deployment-runbook.md)** — one linear
+walk-through from a fresh box to a running export with `--status` reports.
+
+**Running on a dev box** for exploration:
+
 ```bash
 # 1. Restore + build
 dotnet restore
@@ -33,11 +39,15 @@ done
 
 # 4. Run
 dotnet run --project src/MFilesExporter.Console -c Release
+
+# 5. Live monitoring reports (any time, from any box with tracking-DB access):
+./bin/Release/net9.0/MFilesExporter.Console --status
 ```
 
-The console shows a live dashboard while the pipeline runs; structured JSON
-logs stream to `logs/` and metrics are served on `http://+:9464/metrics`
-by default.
+The console shows a live Spectre dashboard while the pipeline runs (dev boxes
+only — under a Windows Service it auto-suppresses). Structured JSON logs
+stream to `logs/`; `--status` prints a formatted summary from the tracking DB
+in under a second.
 
 ---
 
@@ -139,7 +149,8 @@ Every subsystem has a dedicated design doc.
 - [Status reports](docs/status-reports.md) — `--status` CLI + SQL query pack (no external stack)
 
 **Deployment**
-- [Windows Service](docs/deployment-windows-service.md) — publish + install + service account + troubleshooting
+- [Deployment runbook](docs/deployment-runbook.md) — **start here** — zero-to-running walkthrough
+- [Windows Service reference](docs/deployment-windows-service.md) — deeper detail: publish, install, service account, troubleshooting
 
 ---
 
