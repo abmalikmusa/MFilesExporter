@@ -18,6 +18,12 @@ using Serilog;
 
 Log.Logger = SerilogBootstrap.CreateBootstrapLogger();
 
+// --status short-circuit — read-only report, no host build required.
+if (StatusCommand.IsRequested(args))
+{
+    return await StatusCommand.RunAsync(args, CancellationToken.None).ConfigureAwait(false);
+}
+
 try
 {
     // WindowsServiceHelpers.IsWindowsService() returns true iff started by the

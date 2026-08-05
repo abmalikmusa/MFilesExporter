@@ -136,6 +136,7 @@ Every subsystem has a dedicated design doc.
 - [Logging](docs/logging.md) — correlation/audit/performance/worker sinks
 - [Monitoring](docs/monitoring.md) — OpenTelemetry + Prometheus + Grafana
 - [Console dashboard](docs/console-dashboard.md) — Spectre.Console live view
+- [Status reports](docs/status-reports.md) — `--status` CLI + SQL query pack (no external stack)
 
 **Deployment**
 - [Windows Service](docs/deployment-windows-service.md) — publish + install + service account + troubleshooting
