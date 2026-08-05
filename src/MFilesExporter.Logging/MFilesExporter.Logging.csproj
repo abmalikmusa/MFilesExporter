@@ -23,6 +23,7 @@
     <PackageReference Include="Serilog.Enrichers.Process" />
     <PackageReference Include="Serilog.Formatting.Compact" />
     <PackageReference Include="Serilog.Expressions" />
+    <PackageReference Include="Serilog.Sinks.Seq" />
     <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
     <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
   </ItemGroup>

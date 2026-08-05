@@ -158,6 +158,10 @@ Health signals:
 - **Windows Event Log** — the service publishes Start/Stop/Fatal events
   to Application under source `MFilesExporter`. Serilog is the primary
   log surface; Event Log is a coarse fallback for the SCM to inspect.
+- **Seq** (optional) — if Prometheus/Grafana isn't your stack, drop in
+  `deploy/windows-service/appsettings.Seq.example.json` renamed as
+  `appsettings.Production.json` and you get structured-log search +
+  dashboards in one pane. See [docs/logging.md § 13](logging.md).
 
 ## 8. Stopping gracefully
 

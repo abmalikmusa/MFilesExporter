@@ -289,7 +289,58 @@ Only surrogate identifiers — document-file-part, version-part,
 data-file-version, SHA-256 idempotency key hex, output paths — appear in
 structured fields.
 
-## 13. Testing coverage
+## 13. Shipping logs to Seq
+
+**[Seq](https://datalust.co/seq)** is a first-class option for .NET shops that
+don't want Prometheus/Grafana: single MSI, ingests Serilog events over HTTP,
+gives you structured-log search and dashboards in one pane. The
+`Serilog.Sinks.Seq` package is already referenced by
+`MFilesExporter.Logging` — enable it by overlaying the fragment shipped in
+`deploy/windows-service/appsettings.Seq.example.json`:
+
+```jsonc
+"Serilog": {
+  "Using": [
+    "Serilog.Sinks.Console", "Serilog.Sinks.File", "Serilog.Sinks.Async",
+    "Serilog.Sinks.Seq", "Serilog.Expressions"
+  ],
+  "WriteTo": [
+    {
+      "Name": "Seq",
+      "Args": {
+        "serverUrl": "http://seq.internal:5341",
+        "apiKey":    "<REPLACE-WITH-INGESTION-API-KEY>",
+        "restrictedToMinimumLevel": "Information",
+        "batchPostingLimit": 1000,
+        "period":            "00:00:02",
+        "queueSizeLimit":    100000
+      }
+    }
+  ]
+}
+```
+
+Two ways to layer this in:
+
+- **Environment overlay** — rename the file to `appsettings.Production.json`
+  next to the deployed binary. The Generic Host merges it on top of
+  `appsettings.json`, so the new `Seq` sink is added alongside the
+  existing file sinks.
+- **Environment variables** — set `MFILESEXPORTER_Serilog__WriteTo__…`
+  paths. Fine for scripting, awkward to read.
+
+Seq automatically indexes every property Serilog emits (`CorrelationId`,
+`WorkerId`, `Category`, `Operation`, ...), so queries like
+`Category = 'Audit' and Actor = 'worker-3'` work with no dashboard setup.
+The `Category` property still routes the same events to the appropriate
+`logs/*.log` file locally — Seq is additive, not a replacement.
+
+**Retention** — Seq handles retention via its own storage engine. The
+audit sink still writes to `logs/audit-*.log` for the 7-year WORM
+requirement; treat Seq as the operational window, not the compliance
+archive.
+
+## 14. Testing coverage
 
 | Test                              | Focus |
 |-----------------------------------|-------|
