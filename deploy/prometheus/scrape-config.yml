@@ -1,0 +1,25 @@
+# -----------------------------------------------------------------------------
+# Prometheus scrape configuration for MFilesExporter.
+# Drop this into prometheus.yml (or the file glob it references) and reload.
+#
+# The exporter exposes /metrics on port 9464 by default. Override via:
+#   Exporter:Telemetry:PrometheusListenerUrl
+# -----------------------------------------------------------------------------
+scrape_configs:
+  - job_name: mfiles-exporter
+    scrape_interval: 15s
+    scrape_timeout: 10s
+    metrics_path: /metrics
+    static_configs:
+      - targets:
+          - "exporter-prod-1:9464"
+          - "exporter-prod-2:9464"
+          - "exporter-prod-3:9464"
+        labels:
+          service: mfiles-exporter
+          environment: production
+    relabel_configs:
+      - source_labels: [__address__]
+        target_label: instance
+        regex: "(.+):[0-9]+"
+        replacement: "$1"

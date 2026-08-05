@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>MFilesExporter.Shared</RootNamespace>
+    <AssemblyName>MFilesExporter.Shared</AssemblyName>
+    <Description>Cross-cutting primitives usable from every layer. No business logic.</Description>
+  </PropertyGroup>
+</Project>

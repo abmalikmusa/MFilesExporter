@@ -1,0 +1,39 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <OutputType>Exe</OutputType>
+    <RootNamespace>MFilesExporter.Console</RootNamespace>
+    <AssemblyName>MFilesExporter.Console</AssemblyName>
+    <ServerGarbageCollection>true</ServerGarbageCollection>
+    <ConcurrentGarbageCollection>true</ConcurrentGarbageCollection>
+    <TieredCompilation>true</TieredCompilation>
+    <UserSecretsId>mfiles-exporter-console</UserSecretsId>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MFilesExporter.Domain\MFilesExporter.Domain.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Shared\MFilesExporter.Shared.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Configuration\MFilesExporter.Configuration.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Logging\MFilesExporter.Logging.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Application\MFilesExporter.Application.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Persistence\MFilesExporter.Persistence.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Export\MFilesExporter.Export.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Reporting\MFilesExporter.Reporting.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Infrastructure\MFilesExporter.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Extensions.Hosting" />
+    <PackageReference Include="Microsoft.Extensions.Configuration" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Binder" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.EnvironmentVariables" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.Json" />
+    <PackageReference Include="Microsoft.Extensions.Configuration.CommandLine" />
+    <PackageReference Include="Serilog" />
+    <PackageReference Include="Serilog.Extensions.Hosting" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <None Update="appsettings.json"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
+    <None Update="appsettings.Production.json"><CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory></None>
+  </ItemGroup>
+</Project>

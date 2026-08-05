@@ -1,0 +1,28 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>MFilesExporter.Infrastructure</RootNamespace>
+    <AssemblyName>MFilesExporter.Infrastructure</AssemblyName>
+    <Description>Cross-cutting adapters: resilience, clock, telemetry hosting, health checks.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MFilesExporter.Application\MFilesExporter.Application.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Configuration\MFilesExporter.Configuration.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Logging\MFilesExporter.Logging.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Shared\MFilesExporter.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Hosting.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Diagnostics.HealthChecks" />
+    <PackageReference Include="OpenTelemetry" />
+    <PackageReference Include="OpenTelemetry.Extensions.Hosting" />
+    <PackageReference Include="OpenTelemetry.Exporter.Prometheus.HttpListener" />
+    <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
+    <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
+    <PackageReference Include="Polly" />
+  </ItemGroup>
+</Project>

@@ -1,0 +1,38 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <IsTestProject>true</IsTestProject>
+    <IsPackable>false</IsPackable>
+    <TreatWarningsAsErrors>false</TreatWarningsAsErrors>
+    <NoWarn>$(NoWarn);CA1707;CA1861;CA2007;CA1305</NoWarn>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\..\src\MFilesExporter.Domain\MFilesExporter.Domain.csproj" />
+    <ProjectReference Include="..\..\src\MFilesExporter.Shared\MFilesExporter.Shared.csproj" />
+    <ProjectReference Include="..\..\src\MFilesExporter.Configuration\MFilesExporter.Configuration.csproj" />
+    <ProjectReference Include="..\..\src\MFilesExporter.Logging\MFilesExporter.Logging.csproj" />
+    <ProjectReference Include="..\..\src\MFilesExporter.Application\MFilesExporter.Application.csproj" />
+    <ProjectReference Include="..\..\src\MFilesExporter.Persistence\MFilesExporter.Persistence.csproj" />
+    <ProjectReference Include="..\..\src\MFilesExporter.Export\MFilesExporter.Export.csproj" />
+    <ProjectReference Include="..\..\src\MFilesExporter.Reporting\MFilesExporter.Reporting.csproj" />
+    <ProjectReference Include="..\..\src\MFilesExporter.Infrastructure\MFilesExporter.Infrastructure.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.NET.Test.Sdk" />
+    <PackageReference Include="xunit" />
+    <PackageReference Include="xunit.runner.visualstudio">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="FluentAssertions" />
+    <PackageReference Include="NSubstitute" />
+    <PackageReference Include="coverlet.collector">
+      <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
+      <PrivateAssets>all</PrivateAssets>
+    </PackageReference>
+    <PackageReference Include="NetArchTest.Rules" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+    <PackageReference Include="Spectre.Console.Testing" />
+  </ItemGroup>
+</Project>

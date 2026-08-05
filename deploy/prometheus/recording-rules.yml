@@ -1,0 +1,104 @@
+# -----------------------------------------------------------------------------
+# Prometheus recording rules for MFilesExporter.
+# Pre-compute expensive dashboard queries so panels stay responsive under load.
+#
+# Load with `--web.enable-lifecycle` and reload via POST /-/reload.
+# -----------------------------------------------------------------------------
+groups:
+  - name: mfiles_exporter.rules
+    interval: 30s
+    rules:
+      # ---------------------------------------------------------------------
+      # Throughput — the primary KPI on the ops dashboard.
+      # ---------------------------------------------------------------------
+      - record: mfilesexporter:export_speed:docs_per_second_5m
+        expr: sum(rate(mfilesexporter_documents_succeeded_total[5m]))
+
+      - record: mfilesexporter:export_speed:bytes_per_second_5m
+        expr: sum(rate(mfilesexporter_bytes_written_total[5m]))
+
+      # ---------------------------------------------------------------------
+      # Failures / retries / skips — reliability KPIs.
+      # ---------------------------------------------------------------------
+      - record: mfilesexporter:failure_ratio_5m
+        expr: |
+          sum(rate(mfilesexporter_documents_failed_total[5m]))
+            /
+          clamp_min(
+            sum(rate(mfilesexporter_documents_succeeded_total[5m]))
+            + sum(rate(mfilesexporter_documents_failed_total[5m]))
+            + sum(rate(mfilesexporter_documents_skipped_total[5m])),
+            1
+          )
+
+      - record: mfilesexporter:retry_rate_5m
+        expr: sum(rate(mfilesexporter_retries_total[5m])) by (operation, category)
+
+      # ---------------------------------------------------------------------
+      # SQL latency percentiles — capacity KPIs.
+      # ---------------------------------------------------------------------
+      - record: mfilesexporter:sql_latency_ms:p50
+        expr: histogram_quantile(0.50, sum(rate(mfilesexporter_sql_latency_bucket[5m])) by (le, operation))
+
+      - record: mfilesexporter:sql_latency_ms:p95
+        expr: histogram_quantile(0.95, sum(rate(mfilesexporter_sql_latency_bucket[5m])) by (le, operation))
+
+      - record: mfilesexporter:sql_latency_ms:p99
+        expr: histogram_quantile(0.99, sum(rate(mfilesexporter_sql_latency_bucket[5m])) by (le, operation))
+
+      # ---------------------------------------------------------------------
+      # Queue / worker health.
+      # ---------------------------------------------------------------------
+      - record: mfilesexporter:queue_saturation
+        expr: max(mfilesexporter_queue_capacity_ratio) by (queue)
+
+      - record: mfilesexporter:worker_stalled_ratio
+        expr: |
+          sum(mfilesexporter_workers_stalled)
+            /
+          clamp_min(sum(mfilesexporter_workers_busy) + sum(mfilesexporter_workers_stalled), 1)
+
+  # ---------------------------------------------------------------------
+  # Alerts — pageable conditions.
+  # ---------------------------------------------------------------------
+  - name: mfiles_exporter.alerts
+    interval: 30s
+    rules:
+      - alert: MFilesExporterHighFailureRate
+        expr: mfilesexporter:failure_ratio_5m > 0.05
+        for: 5m
+        labels: { severity: page, service: mfiles-exporter }
+        annotations:
+          summary: "Failure ratio above 5% for 5m"
+          description: "Current ratio: {{ $value | humanizePercentage }}. Check errors log."
+
+      - alert: MFilesExporterDiskLow
+        expr: mfilesexporter_disk_free_ratio < 0.10
+        for: 10m
+        labels: { severity: page, service: mfiles-exporter }
+        annotations:
+          summary: "Output volume below 10% free"
+          description: "Volume {{ $labels.volume }} at {{ $value | humanizePercentage }} free."
+
+      - alert: MFilesExporterWorkersStalled
+        expr: sum(mfilesexporter_workers_stalled) > 0
+        for: 10m
+        labels: { severity: warn, service: mfiles-exporter }
+        annotations:
+          summary: "{{ $value }} worker(s) stalled for 10m"
+
+      - alert: MFilesExporterSqlP95High
+        expr: mfilesexporter:sql_latency_ms:p95{operation="sql-blob-read"} > 5000
+        for: 5m
+        labels: { severity: warn, service: mfiles-exporter }
+        annotations:
+          summary: "BLOB read p95 > 5s"
+          description: "Investigate SQL Server BLOB path or network."
+
+      - alert: MFilesExporterQueueSaturated
+        expr: mfilesexporter:queue_saturation > 0.9
+        for: 15m
+        labels: { severity: warn, service: mfiles-exporter }
+        annotations:
+          summary: "Queue {{ $labels.queue }} above 90% for 15m"
+          description: "Consumer is not keeping up — check downstream latencies."

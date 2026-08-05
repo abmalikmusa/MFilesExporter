@@ -1,0 +1,188 @@
+{
+  "annotations": { "list": [] },
+  "editable": true,
+  "fiscalYearStartMonth": 0,
+  "graphTooltip": 0,
+  "id": null,
+  "title": "MFilesExporter",
+  "uid": "mfiles-exporter",
+  "version": 1,
+  "schemaVersion": 39,
+  "refresh": "30s",
+  "time": { "from": "now-1h", "to": "now" },
+  "timezone": "browser",
+  "tags": ["mfiles", "exporter"],
+  "templating": {
+    "list": [
+      {
+        "type": "datasource",
+        "name": "DS_PROM",
+        "label": "Prometheus",
+        "query": "prometheus",
+        "current": { "text": "Prometheus", "value": "Prometheus" }
+      }
+    ]
+  },
+  "panels": [
+    {
+      "id": 1, "type": "stat", "title": "Export speed (docs/s)",
+      "gridPos": { "x": 0, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [{ "expr": "mfilesexporter:export_speed:docs_per_second_5m", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "value" },
+      "fieldConfig": { "defaults": { "unit": "ops", "decimals": 0 } }
+    },
+    {
+      "id": 2, "type": "stat", "title": "Documents exported (total)",
+      "gridPos": { "x": 6, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [{ "expr": "sum(mfilesexporter_documents_succeeded_total)", "refId": "A" }],
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } },
+      "fieldConfig": { "defaults": { "unit": "short", "decimals": 0 } }
+    },
+    {
+      "id": 3, "type": "stat", "title": "Failed",
+      "gridPos": { "x": 12, "y": 0, "w": 3, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [{ "expr": "sum(mfilesexporter_documents_failed_total)", "refId": "A" }],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "short",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "green", "value": null },
+            { "color": "orange", "value": 100 },
+            { "color": "red", "value": 1000 }
+          ]}
+        }
+      },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] }, "colorMode": "background" }
+    },
+    {
+      "id": 4, "type": "stat", "title": "Skipped",
+      "gridPos": { "x": 15, "y": 0, "w": 3, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [{ "expr": "sum(mfilesexporter_documents_skipped_total)", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "short" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 5, "type": "stat", "title": "ETA",
+      "gridPos": { "x": 18, "y": 0, "w": 6, "h": 4 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [{ "expr": "max(mfilesexporter_eta_seconds)", "refId": "A" }],
+      "fieldConfig": { "defaults": { "unit": "s" } },
+      "options": { "reduceOptions": { "calcs": ["lastNotNull"] } }
+    },
+    {
+      "id": 10, "type": "timeseries", "title": "Documents / second",
+      "gridPos": { "x": 0, "y": 4, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        { "expr": "sum(rate(mfilesexporter_documents_succeeded_total[1m]))", "refId": "A", "legendFormat": "succeeded" },
+        { "expr": "sum(rate(mfilesexporter_documents_failed_total[1m]))",    "refId": "B", "legendFormat": "failed" },
+        { "expr": "sum(rate(mfilesexporter_documents_skipped_total[1m]))",   "refId": "C", "legendFormat": "skipped" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ops" } }
+    },
+    {
+      "id": 11, "type": "timeseries", "title": "Bytes / second",
+      "gridPos": { "x": 12, "y": 4, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [{ "expr": "sum(rate(mfilesexporter_bytes_written_total[1m]))", "refId": "A", "legendFormat": "bytes/s" }],
+      "fieldConfig": { "defaults": { "unit": "Bps" } }
+    },
+    {
+      "id": 20, "type": "timeseries", "title": "Queue depth by name",
+      "gridPos": { "x": 0, "y": 11, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [{ "expr": "mfilesexporter_queue_depth", "refId": "A", "legendFormat": "{{queue}}" }],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 21, "type": "timeseries", "title": "Queue saturation (depth / capacity)",
+      "gridPos": { "x": 12, "y": 11, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [{ "expr": "mfilesexporter_queue_capacity_ratio", "refId": "A", "legendFormat": "{{queue}}" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } }
+    },
+    {
+      "id": 30, "type": "timeseries", "title": "Worker utilization",
+      "gridPos": { "x": 0, "y": 18, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        { "expr": "mfilesexporter_workers_utilization", "refId": "A", "legendFormat": "utilization" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "percentunit", "min": 0, "max": 1 } }
+    },
+    {
+      "id": 31, "type": "timeseries", "title": "Workers busy / stalled",
+      "gridPos": { "x": 8, "y": 18, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        { "expr": "mfilesexporter_workers_busy",    "refId": "A", "legendFormat": "busy" },
+        { "expr": "mfilesexporter_workers_stalled", "refId": "B", "legendFormat": "stalled" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "short" } }
+    },
+    {
+      "id": 32, "type": "timeseries", "title": "Retries by category",
+      "gridPos": { "x": 16, "y": 18, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [{ "expr": "sum(rate(mfilesexporter_retries_total[5m])) by (category)", "refId": "A", "legendFormat": "{{category}}" }],
+      "fieldConfig": { "defaults": { "unit": "cps" } }
+    },
+    {
+      "id": 40, "type": "timeseries", "title": "SQL latency (ms) — p50 / p95 / p99",
+      "gridPos": { "x": 0, "y": 25, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        { "expr": "mfilesexporter:sql_latency_ms:p50", "refId": "A", "legendFormat": "{{operation}} p50" },
+        { "expr": "mfilesexporter:sql_latency_ms:p95", "refId": "B", "legendFormat": "{{operation}} p95" },
+        { "expr": "mfilesexporter:sql_latency_ms:p99", "refId": "C", "legendFormat": "{{operation}} p99" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 41, "type": "timeseries", "title": "Sink latency (ms) — p95",
+      "gridPos": { "x": 12, "y": 25, "w": 12, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [{ "expr": "histogram_quantile(0.95, sum(rate(mfilesexporter_sink_latency_bucket[5m])) by (le, status))", "refId": "A", "legendFormat": "{{status}} p95" }],
+      "fieldConfig": { "defaults": { "unit": "ms" } }
+    },
+    {
+      "id": 50, "type": "timeseries", "title": "Memory — working set / GC heap",
+      "gridPos": { "x": 0, "y": 32, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        { "expr": "process_working_set_bytes",  "refId": "A", "legendFormat": "working set" },
+        { "expr": "process_memory_usage_bytes", "refId": "B", "legendFormat": "gc heap" }
+      ],
+      "fieldConfig": { "defaults": { "unit": "bytes" } }
+    },
+    {
+      "id": 51, "type": "timeseries", "title": "CPU utilization",
+      "gridPos": { "x": 8, "y": 32, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [{ "expr": "sum(rate(process_cpu_time_seconds_total[1m]))", "refId": "A", "legendFormat": "cpu s/s" }],
+      "fieldConfig": { "defaults": { "unit": "percentunit" } }
+    },
+    {
+      "id": 52, "type": "timeseries", "title": "Output volume — free bytes",
+      "gridPos": { "x": 16, "y": 32, "w": 8, "h": 7 },
+      "datasource": { "type": "prometheus", "uid": "${DS_PROM}" },
+      "targets": [
+        { "expr": "mfilesexporter_disk_free_bytes", "refId": "A", "legendFormat": "{{volume}}" }
+      ],
+      "fieldConfig": {
+        "defaults": {
+          "unit": "bytes",
+          "thresholds": { "mode": "absolute", "steps": [
+            { "color": "red",   "value": null },
+            { "color": "orange","value": 53687091200 },
+            { "color": "green", "value": 214748364800 }
+          ]}
+        }
+      }
+    }
+  ]
+}

@@ -1,0 +1,22 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>MFilesExporter.Persistence</RootNamespace>
+    <AssemblyName>MFilesExporter.Persistence</AssemblyName>
+    <Description>Data-access adapters: M-Files SQL Server, SQLite state store.</Description>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\MFilesExporter.Domain\MFilesExporter.Domain.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Application\MFilesExporter.Application.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Configuration\MFilesExporter.Configuration.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Shared\MFilesExporter.Shared.csproj" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Microsoft.Data.SqlClient" />
+    <PackageReference Include="Microsoft.Data.Sqlite" />
+    <PackageReference Include="Dapper" />
+    <PackageReference Include="Microsoft.Extensions.DependencyInjection.Abstractions" />
+    <PackageReference Include="Microsoft.Extensions.Logging.Abstractions" />
+  </ItemGroup>
+</Project>

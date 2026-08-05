@@ -1,0 +1,7 @@
+<Project Sdk="Microsoft.NET.Sdk">
+  <PropertyGroup>
+    <RootNamespace>MFilesExporter.Domain</RootNamespace>
+    <AssemblyName>MFilesExporter.Domain</AssemblyName>
+    <Description>Pure domain model. Zero runtime dependencies.</Description>
+  </PropertyGroup>
+</Project>
