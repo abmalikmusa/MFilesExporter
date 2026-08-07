@@ -47,10 +47,14 @@ public sealed class ExporterTestHost : IAsyncDisposable
     /// Creates a host with a fresh temp output root. The host owns the
     /// directory and deletes it on <see cref="DisposeAsync"/>.
     /// </summary>
-    public static ExporterTestHost Create(SqlServerFixture sql, int workerCount = 4, string partitionKey = "test")
+    public static ExporterTestHost Create(
+        SqlServerFixture sql,
+        int workerCount = 4,
+        string partitionKey = "test",
+        Action<IServiceCollection>? customize = null)
     {
         var outputRoot = Path.Combine(Path.GetTempPath(), "mfilesexporter-it-" + Guid.NewGuid().ToString("N"));
-        return CreateInternal(sql, workerCount, partitionKey, outputRoot, ownsOutputRoot: true);
+        return CreateInternal(sql, workerCount, partitionKey, outputRoot, ownsOutputRoot: true, customize);
     }
 
     /// <summary>
@@ -60,11 +64,12 @@ public sealed class ExporterTestHost : IAsyncDisposable
     /// </summary>
     public static ExporterTestHost CreateSharing(SqlServerFixture sql, string outputRoot, int workerCount, string partitionKey)
     {
-        return CreateInternal(sql, workerCount, partitionKey, outputRoot, ownsOutputRoot: false);
+        return CreateInternal(sql, workerCount, partitionKey, outputRoot, ownsOutputRoot: false, customize: null);
     }
 
     private static ExporterTestHost CreateInternal(
-        SqlServerFixture sql, int workerCount, string partitionKey, string outputRoot, bool ownsOutputRoot)
+        SqlServerFixture sql, int workerCount, string partitionKey, string outputRoot, bool ownsOutputRoot,
+        Action<IServiceCollection>? customize = null)
     {
         Directory.CreateDirectory(outputRoot);
         Directory.CreateDirectory(Path.Combine(outputRoot, "documents"));
@@ -125,6 +130,9 @@ public sealed class ExporterTestHost : IAsyncDisposable
         builder.Services.AddExporterExport();
         builder.Services.AddExporterReporting();
         builder.Services.AddExporterApplication();
+
+        // Test-only decoration — fault-injection tests replace the sink here.
+        customize?.Invoke(builder.Services);
 
         var host = builder.Build();
         return new ExporterTestHost(host, outputRoot, partitionKey, ownsOutputRoot);
