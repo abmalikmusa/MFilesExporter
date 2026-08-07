@@ -9,11 +9,6 @@ namespace MFilesExporter.Export.Pipeline;
 
 public sealed class OutcomeCollectorStage
 {
-    // JobId=0 here means "test / single-instance run" — the CheckpointEngine's
-    // SQL layer treats 0 as "skip SQL, WAL only". A future orchestrator that
-    // knows the tracking-DB job id will pass it through.
-    private const long DefaultJobId = 0;
-
     private readonly PipelineChannels _channels;
     private readonly IExportStateStore _stateStore;
     private readonly IManifestWriter _manifestWriter;
@@ -21,6 +16,7 @@ public sealed class OutcomeCollectorStage
     private readonly MFilesSourceOptions _sourceOptions;
     private readonly IRetryExecutor _resilience;
     private readonly ICheckpointEngine _checkpointEngine;
+    private readonly IJobContext _jobContext;
     private readonly ILogger<OutcomeCollectorStage> _logger;
 
     private long _documentsProcessed;
@@ -33,6 +29,7 @@ public sealed class OutcomeCollectorStage
         MFilesSourceOptions sourceOptions,
         IRetryExecutor resilience,
         ICheckpointEngine checkpointEngine,
+        IJobContext jobContext,
         ILogger<OutcomeCollectorStage> logger)
     {
         _channels = channels;
@@ -42,6 +39,7 @@ public sealed class OutcomeCollectorStage
         _sourceOptions = sourceOptions;
         _resilience = resilience;
         _checkpointEngine = checkpointEngine;
+        _jobContext = jobContext;
         _logger = logger;
     }
 
@@ -172,7 +170,7 @@ public sealed class OutcomeCollectorStage
         try
         {
             var result = await _checkpointEngine.SaveAsync(
-                DefaultJobId, _sourceOptions.PartitionKey, candidate, cancellationToken)
+                _jobContext.CurrentJobId, _sourceOptions.PartitionKey, candidate, cancellationToken)
                 .ConfigureAwait(false);
 
             if (!result.WalWritten || !result.SqlWritten)

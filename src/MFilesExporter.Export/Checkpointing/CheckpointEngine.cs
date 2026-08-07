@@ -57,7 +57,9 @@ public sealed class CheckpointEngine : ICheckpointEngine
         ArgumentException.ThrowIfNullOrWhiteSpace(partitionKey);
 
         var walEntry = await SafeReadWalAsync(jobId, partitionKey, cancellationToken).ConfigureAwait(false);
-        var sqlEntry = _options.PersistToTrackingDb
+        // Read the SQL side only when a real job is registered. See the
+        // matching guard in SaveAsync for the rationale.
+        var sqlEntry = _options.PersistToTrackingDb && jobId > 0
             ? await SafeReadSqlAsync(jobId, partitionKey, cancellationToken).ConfigureAwait(false)
             : null;
 
@@ -169,7 +171,12 @@ public sealed class CheckpointEngine : ICheckpointEngine
         bool sqlAdvanced = false;
         string? warning = null;
 
-        if (_options.PersistToTrackingDb)
+        // Skip the SQL layer when no real tracking-DB job is registered on
+        // this run (jobId == 0). Attempting the write would fail on the
+        // dbo.ExportCheckpoints FK to dbo.ExportJobs and produce log noise
+        // — WAL + local state store are authoritative until a job lifecycle
+        // is wired into the orchestrator.
+        if (_options.PersistToTrackingDb && jobId > 0)
         {
             try
             {

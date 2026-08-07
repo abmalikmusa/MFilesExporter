@@ -1,3 +1,4 @@
+using MFilesExporter.Application.Abstractions;
 using MFilesExporter.Application.Batching;
 using MFilesExporter.Application.Common;
 using MFilesExporter.Application.Dispatching;
@@ -16,6 +17,11 @@ public static class ApplicationServiceCollectionExtensions
     public static IServiceCollection AddExporterApplication(this IServiceCollection services)
     {
         ArgumentNullException.ThrowIfNull(services);
+
+        // Ambient job context — populated by whichever orchestrator owns
+        // the tracking-DB job lifecycle; consumed by CheckpointEngine +
+        // any component that needs to attribute writes to a real ExportJobId.
+        services.AddSingleton<IJobContext, JobContext>();
 
         // Legacy direct-call orchestrator (backwards compat).
         services.AddSingleton<ExportOrchestrator>();
