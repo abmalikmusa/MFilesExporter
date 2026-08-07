@@ -1,5 +1,6 @@
 using MFilesExporter.Application.Abstractions;
 using MFilesExporter.Application.Abstractions.Dashboard;
+using MFilesExporter.Application.Abstractions.Retry;
 using MFilesExporter.Reporting.Dashboard;
 using Microsoft.Extensions.DependencyInjection;
 using Spectre.Console;
@@ -21,6 +22,12 @@ public static class ReportingServiceCollectionExtensions
         services.AddSingleton<SystemResourceSampler>();
         services.AddSingleton<IDashboardStateSource, DashboardStateSource>();
         services.AddSingleton<DashboardRenderer>();
+
+        // Missing dashboard providers — now backed by real sources.
+        services.AddSingleton<ITotalExpectedSource, TotalExpectedFromJobRepository>();
+        services.AddSingleton<RetryCounterObserver>();
+        services.AddSingleton<IRetryCounterSource>(sp => sp.GetRequiredService<RetryCounterObserver>());
+        services.AddSingleton<IRetryObserver>(sp => sp.GetRequiredService<RetryCounterObserver>());
         services.AddSingleton<IAnsiConsole>(_ => AnsiConsole.Console);
         services.AddHostedService<ConsoleDashboardHostedService>();
 
