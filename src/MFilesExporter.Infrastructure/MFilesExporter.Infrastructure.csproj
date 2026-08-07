@@ -3,6 +3,16 @@
     <RootNamespace>MFilesExporter.Infrastructure</RootNamespace>
     <AssemblyName>MFilesExporter.Infrastructure</AssemblyName>
     <Description>Cross-cutting adapters: resilience, clock, telemetry hosting, health checks.</Description>
+    <!--
+      NU1902 (GHSA-4625-4j76-fww9) — moderate-severity advisory against
+      OpenTelemetry.Exporter.OpenTelemetryProtocol. As of the last package
+      audit (2026-08) it is still reported against every published 1.x
+      version, and the OTel maintainers have flagged it as won't-fix
+      before the 2.x line. Scoped suppression here — not the whole solution —
+      so any future vulnerability in a *different* package is not silenced.
+      Revisit when OpenTelemetry 2.x lands.
+    -->
+    <NoWarn>$(NoWarn);NU1902</NoWarn>
   </PropertyGroup>
 
   <ItemGroup>
@@ -24,5 +34,8 @@
     <PackageReference Include="OpenTelemetry.Exporter.OpenTelemetryProtocol" />
     <PackageReference Include="OpenTelemetry.Instrumentation.Runtime" />
     <PackageReference Include="Polly" />
+    <!-- Direct pin — silences the transitive-System.Text.Json advisory (GHSA-4625-4j76-fww9)
+         inherited via OpenTelemetry.Exporter.OpenTelemetryProtocol. -->
+    <PackageReference Include="System.Text.Json" />
   </ItemGroup>
 </Project>
