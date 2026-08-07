@@ -40,17 +40,20 @@ public sealed class RunExportHandler : ICommandHandler<RunExportCommand, RunExpo
 {
     private readonly IApplicationDispatcher _dispatcher;
     private readonly IExportPipeline _pipeline;
+    private readonly IJobContext _jobContext;
     private readonly IClock _clock;
     private readonly ILogger<RunExportHandler> _logger;
 
     public RunExportHandler(
         IApplicationDispatcher dispatcher,
         IExportPipeline pipeline,
+        IJobContext jobContext,
         IClock clock,
         ILogger<RunExportHandler> logger)
     {
         _dispatcher = dispatcher;
         _pipeline = pipeline;
+        _jobContext = jobContext;
         _clock = clock;
         _logger = logger;
     }
@@ -82,6 +85,7 @@ public sealed class RunExportHandler : ICommandHandler<RunExportCommand, RunExpo
                 return ApplicationResult<RunExportSummary>.Failure(jobResult.Errors);
             }
             jobId = jobResult.Value;
+            _jobContext.SetCurrent(jobId);   // populate ambient scope for CheckpointEngine et al.
 
             var workerResult = await _dispatcher.SendAsync<RegisterWorkerCommand, long>(
                 new RegisterWorkerCommand
@@ -138,6 +142,9 @@ public sealed class RunExportHandler : ICommandHandler<RunExportCommand, RunExpo
                 Reason = failure?.Message,
             }, CancellationToken.None).ConfigureAwait(false);
         }
+
+        // Ambient scope is drained regardless of outcome.
+        _jobContext.Clear();
 
         if (failure is not null)
         {
