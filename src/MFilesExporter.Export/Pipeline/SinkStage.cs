@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using MFilesExporter.Application.Abstractions;
+using MFilesExporter.Application.Abstractions.Dashboard;
 using MFilesExporter.Application.Abstractions.Monitoring;
 using MFilesExporter.Configuration.Options;
 using MFilesExporter.Domain.Documents;
@@ -20,6 +21,7 @@ public sealed class SinkStage
     private readonly IExportValidationPipeline _validation;
     private readonly IMetadataGenerator _metadata;
     private readonly IExporterMetrics _metrics;
+    private readonly IWorkerActivityFeed _activity;
     private readonly ExportValidationOptions _validationOptions;
     private readonly FileExportOptions _fileExportOptions;
     private readonly ILogger<SinkStage> _logger;
@@ -33,6 +35,7 @@ public sealed class SinkStage
         IExportValidationPipeline validation,
         IMetadataGenerator metadata,
         IExporterMetrics metrics,
+        IWorkerActivityFeed activity,
         ExportValidationOptions validationOptions,
         FileExportOptions fileExportOptions,
         ILogger<SinkStage> logger)
@@ -45,6 +48,7 @@ public sealed class SinkStage
         _validation = validation;
         _metadata = metadata;
         _metrics = metrics;
+        _activity = activity;
         _validationOptions = validationOptions;
         _fileExportOptions = fileExportOptions;
         _logger = logger;
@@ -72,12 +76,18 @@ public sealed class SinkStage
 
     private async Task WorkerLoopAsync(int workerId, CancellationToken cancellationToken)
     {
+        _activity.RecordIdle(workerId);
         await foreach (var prepared in _channels.Content.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
             var descriptor = prepared.Descriptor;
             var sw = Stopwatch.StartNew();
             var sinkSucceeded = false;
             ExportOutcome outcome;
+
+            _activity.RecordStart(
+                workerId,
+                descriptor.DocumentFileVersionKey.ToString(),
+                bytesExpected: descriptor.LogicalFileSize);
 
             try
             {
@@ -170,10 +180,20 @@ public sealed class SinkStage
                 sw.Stop();
                 PipelineTelemetry.DocumentDurationMs.Record(sw.Elapsed.TotalMilliseconds);
                 _metrics.RecordSinkLatency(sw.Elapsed, sinkSucceeded);
+
+                // sinkSucceeded is our finally-safe view of the try body; if
+                // the body threw before setting outcome we still record a
+                // Failed finish so the dashboard reflects reality.
+                _activity.RecordFinish(
+                    workerId,
+                    sinkSucceeded ? WorkerActivityOutcome.Succeeded : WorkerActivityOutcome.Failed,
+                    bytesWritten: 0);
             }
 
             await _channels.Outcomes.Writer.WriteAsync(outcome, cancellationToken).ConfigureAwait(false);
         }
+
+        _activity.RecordIdle(workerId);
     }
 
     private async Task<ExportValidationReport> RunValidationAsync(
