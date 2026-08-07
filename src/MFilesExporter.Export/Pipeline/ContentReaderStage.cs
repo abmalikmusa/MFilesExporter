@@ -6,6 +6,7 @@ using MFilesExporter.Configuration.Options;
 using MFilesExporter.Domain.Documents;
 using MFilesExporter.Domain.Exceptions;
 using MFilesExporter.Export.Telemetry;
+using MFilesExporter.Logging.Workers;
 using Microsoft.Extensions.Logging;
 
 namespace MFilesExporter.Export.Pipeline;
@@ -60,6 +61,8 @@ public sealed class ContentReaderStage
 
     private async Task WorkerLoopAsync(int workerId, CancellationToken cancellationToken)
     {
+        using var _workerScope = WorkerLogScope.Enter(workerId, workerName: $"content-{workerId}");
+
         var enumeration = _channels.Enumeration.Reader;
         var outContent = _channels.Content.Writer;
 

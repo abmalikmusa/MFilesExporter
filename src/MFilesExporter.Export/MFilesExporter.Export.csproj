@@ -9,6 +9,7 @@
     <ProjectReference Include="..\MFilesExporter.Domain\MFilesExporter.Domain.csproj" />
     <ProjectReference Include="..\MFilesExporter.Application\MFilesExporter.Application.csproj" />
     <ProjectReference Include="..\MFilesExporter.Configuration\MFilesExporter.Configuration.csproj" />
+    <ProjectReference Include="..\MFilesExporter.Logging\MFilesExporter.Logging.csproj" />
     <ProjectReference Include="..\MFilesExporter.Shared\MFilesExporter.Shared.csproj" />
   </ItemGroup>
 

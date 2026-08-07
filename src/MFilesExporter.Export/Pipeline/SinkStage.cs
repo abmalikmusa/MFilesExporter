@@ -8,6 +8,7 @@ using MFilesExporter.Domain.Documents;
 using MFilesExporter.Export.Metadata;
 using MFilesExporter.Export.Telemetry;
 using MFilesExporter.Export.Validation;
+using MFilesExporter.Logging.Workers;
 using Microsoft.Extensions.Logging;
 
 namespace MFilesExporter.Export.Pipeline;
@@ -77,6 +78,11 @@ public sealed class SinkStage
 
     private async Task WorkerLoopAsync(int workerId, CancellationToken cancellationToken)
     {
+        // Tag every log line inside this worker with Category=Worker +
+        // WorkerId / WorkerName so logs/workers-*.log receives them via
+        // the Serilog category filter.
+        using var _workerScope = WorkerLogScope.Enter(workerId, workerName: $"sink-{workerId}");
+
         _activity.RecordIdle(workerId);
         await foreach (var prepared in _channels.Content.Reader.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
