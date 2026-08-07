@@ -13,7 +13,6 @@ public static class ReportingServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(services);
 
         services.AddSingleton<IProgressReporter, LoggingProgressReporter>();
-        services.AddSingleton<RunSummaryReporter>();
         services.AddHostedService<ProgressPublisherHostedService>();
 
         // Dashboard — activity feed, resource sampler, aggregating state source,

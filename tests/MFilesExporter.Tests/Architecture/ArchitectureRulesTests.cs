@@ -49,7 +49,7 @@ public class ArchitectureRulesTests
     [Fact]
     public void Application_DoesNotDependOn_PersistenceExportReportingInfrastructure()
     {
-        var result = Types.InAssembly(typeof(global::MFilesExporter.Application.UseCases.ExportOrchestrator).Assembly)
+        var result = Types.InAssembly(typeof(global::MFilesExporter.Application.UseCases.Pipeline.RunExportHandler).Assembly)
             .Should().NotHaveDependencyOnAny(
                 Persistence, Export, Reporting, Infrastructure, Console, Logging)
             .GetResult();

@@ -18,13 +18,10 @@ public static class ApplicationServiceCollectionExtensions
     {
         ArgumentNullException.ThrowIfNull(services);
 
-        // Ambient job context — populated by whichever orchestrator owns
-        // the tracking-DB job lifecycle; consumed by CheckpointEngine +
-        // any component that needs to attribute writes to a real ExportJobId.
+        // Ambient job context — populated by RunExportHandler; consumed by
+        // CheckpointEngine + any component that needs to attribute writes
+        // to a real ExportJobId.
         services.AddSingleton<IJobContext, JobContext>();
-
-        // Legacy direct-call orchestrator (backwards compat).
-        services.AddSingleton<ExportOrchestrator>();
 
         // Dispatcher — inner concrete + logging decorator surfaced as the interface.
         services.AddSingleton<ApplicationDispatcher>();
