@@ -48,8 +48,15 @@ BEGIN
     BEGIN TRAN;
 
     -- Move child rows first, then the parent.
+    -- Explicit column lists on both sides — RowVersion, ModifiedDate,
+    -- ModifiedBy, and CreatedBy are not carried into the archive shape.
     INSERT INTO archive.ExportAudit
-        SELECT a.*, SYSUTCDATETIME() AS ArchivedAtUtc
+        (ExportAuditId, ExportJobId, EntityType, EntityId, AuditAction,
+         PreviousStatus, NewStatus, ActionDetails, ActorName, ActorType,
+         OccurredAtUtc, Status, CreatedDate, ArchivedAtUtc)
+        SELECT a.ExportAuditId, a.ExportJobId, a.EntityType, a.EntityId, a.AuditAction,
+               a.PreviousStatus, a.NewStatus, a.ActionDetails, a.ActorName, a.ActorType,
+               a.OccurredAtUtc, a.Status, a.CreatedDate, SYSUTCDATETIME()
         FROM dbo.ExportAudit a
         INNER JOIN @archived x ON x.ExportJobId = a.ExportJobId;
     DELETE a FROM dbo.ExportAudit a INNER JOIN @archived x ON x.ExportJobId = a.ExportJobId;
@@ -93,13 +100,27 @@ BEGIN
     DELETE p FROM dbo.ExportProgress p INNER JOIN @archived x ON x.ExportJobId = p.ExportJobId;
 
     INSERT INTO archive.ExportWorkers
-        SELECT w.*, SYSUTCDATETIME() AS ArchivedAtUtc, SUSER_SNAME() AS ArchivedBy
+        (ExportWorkerId, ExportJobId, WorkerName, MachineName, ProcessId,
+         AssignedPartition, Concurrency, StartedAtUtc, LastHeartbeatUtc, StoppedAtUtc,
+         Status, CreatedDate, CreatedBy, ModifiedDate, ModifiedBy,
+         ArchivedAtUtc, ArchivedBy)
+        SELECT w.ExportWorkerId, w.ExportJobId, w.WorkerName, w.MachineName, w.ProcessId,
+               w.AssignedPartition, w.Concurrency, w.StartedAtUtc, w.LastHeartbeatUtc, w.StoppedAtUtc,
+               w.Status, w.CreatedDate, w.CreatedBy, w.ModifiedDate, w.ModifiedBy,
+               SYSUTCDATETIME(), SUSER_SNAME()
         FROM dbo.ExportWorkers w
         INNER JOIN @archived x ON x.ExportJobId = w.ExportJobId;
     DELETE w FROM dbo.ExportWorkers w INNER JOIN @archived x ON x.ExportJobId = w.ExportJobId;
 
     INSERT INTO archive.ExportJobs
-        SELECT j.*, SYSUTCDATETIME() AS ArchivedAtUtc, SUSER_SNAME() AS ArchivedBy
+        (ExportJobId, JobName, SourceServer, SourceDatabase, PartitionKey,
+         TotalDocumentsExpected, StartedAtUtc, CompletedAtUtc, CancellationReason, Status,
+         CreatedDate, CreatedBy, ModifiedDate, ModifiedBy,
+         ArchivedAtUtc, ArchivedBy)
+        SELECT j.ExportJobId, j.JobName, j.SourceServer, j.SourceDatabase, j.PartitionKey,
+               j.TotalDocumentsExpected, j.StartedAtUtc, j.CompletedAtUtc, j.CancellationReason, j.Status,
+               j.CreatedDate, j.CreatedBy, j.ModifiedDate, j.ModifiedBy,
+               SYSUTCDATETIME(), SUSER_SNAME()
         FROM dbo.ExportJobs j
         INNER JOIN @archived x ON x.ExportJobId = j.ExportJobId;
     DELETE j FROM dbo.ExportJobs j INNER JOIN @archived x ON x.ExportJobId = j.ExportJobId;

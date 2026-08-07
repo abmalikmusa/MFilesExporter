@@ -100,11 +100,7 @@ public sealed class SqlServerFixture : IAsyncLifetime
                                  // 00 handled inline above; 50 provisions logins/roles the
                                  // exporter role would need — irrelevant when we run as sa.
                                  return !name.StartsWith("00-", StringComparison.Ordinal)
-                                     && !name.StartsWith("50-", StringComparison.Ordinal)
-                                     // 60-maintenance.sql has a pre-existing archive
-                                     // sproc bug (uses SELECT j.* into a table with fewer
-                                     // columns). Not exercised by the pipeline; TODO to fix.
-                                     && !name.StartsWith("60-", StringComparison.Ordinal);
+                                     && !name.StartsWith("50-", StringComparison.Ordinal);
                              })
                              .OrderBy(f => Path.GetFileName(f), StringComparer.Ordinal);
 
