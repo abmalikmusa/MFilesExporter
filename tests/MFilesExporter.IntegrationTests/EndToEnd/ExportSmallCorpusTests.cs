@@ -79,6 +79,22 @@ public sealed class ExportSmallCorpusTests
         counters.TotalFailed.Should().Be(0);
         counters.TotalSkipped.Should().Be(0);
         counters.TotalBytesWritten.Should().Be(seeded.Sum(d => (long)d.Payload.Length));
+
+        // -----------------------------------------------------------------
+        // Metadata artifacts — CSV + JSON + manifest — must have landed
+        // alongside the documents. Proves the metadata generator is
+        // actually wired into the pipeline.
+        // -----------------------------------------------------------------
+        var metadataRoot = Path.Combine(host.OutputRoot, "metadata");
+        Directory.EnumerateFiles(metadataRoot, "*.csv").Should().NotBeEmpty(
+            "the pipeline should have emitted metadata.csv");
+        Directory.EnumerateFiles(metadataRoot, "*.json").Should().NotBeEmpty(
+            "the pipeline should have emitted metadata.json and manifest.json");
+
+        var csvPath = Directory.EnumerateFiles(metadataRoot, "*.csv").First();
+        var csvText = await File.ReadAllTextAsync(csvPath).ConfigureAwait(false);
+        var csvLines = csvText.Split('\n', StringSplitOptions.RemoveEmptyEntries);
+        csvLines.Length.Should().Be(CorpusSize + 1, "one header row + one row per document");
     }
 
     private static string ComputeSha256Hex(byte[] data)
