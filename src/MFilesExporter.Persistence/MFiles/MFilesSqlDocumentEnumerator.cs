@@ -96,7 +96,8 @@ internal sealed class MFilesSqlDocumentEnumerator : IDocumentEnumerator
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             var docPart = reader.GetInt64(0);
-            var verPart = reader.GetInt64(1);
+            // ID_VERSIONPART is INT in the vault schema.
+            var verPart = (long)reader.GetInt32(1);
             var title = await reader.IsDBNullAsync(2, cancellationToken).ConfigureAwait(false)
                 ? string.Empty : reader.GetString(2);
             var ext = await reader.IsDBNullAsync(3, cancellationToken).ConfigureAwait(false)

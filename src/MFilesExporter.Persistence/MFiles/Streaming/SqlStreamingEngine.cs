@@ -180,7 +180,9 @@ public sealed class SqlStreamingEngine : ISqlStreamingEngine
         while (await reader.ReadAsync(cancellationToken).ConfigureAwait(false))
         {
             var docPart      = reader.GetInt64(0);
-            var verPart      = reader.GetInt64(1);
+            // ID_VERSIONPART is INT in the M-Files vault schema, not BIGINT.
+            // Read as Int32 and widen so the domain's long-typed key holds it.
+            var verPart      = (long)reader.GetInt32(1);
             var title        = await reader.IsDBNullAsync(2, cancellationToken).ConfigureAwait(false)
                 ? string.Empty : reader.GetString(2);
             var ext          = await reader.IsDBNullAsync(3, cancellationToken).ConfigureAwait(false)
