@@ -1,5 +1,6 @@
 using System.Diagnostics;
 using MFilesExporter.Application.Abstractions;
+using MFilesExporter.Application.Abstractions.Monitoring;
 using MFilesExporter.Configuration.Options;
 using MFilesExporter.Domain.Documents;
 using MFilesExporter.Export.Metadata;
@@ -18,6 +19,7 @@ public sealed class SinkStage
     private readonly IClock _clock;
     private readonly IExportValidationPipeline _validation;
     private readonly IMetadataGenerator _metadata;
+    private readonly IExporterMetrics _metrics;
     private readonly ExportValidationOptions _validationOptions;
     private readonly FileExportOptions _fileExportOptions;
     private readonly ILogger<SinkStage> _logger;
@@ -30,6 +32,7 @@ public sealed class SinkStage
         IClock clock,
         IExportValidationPipeline validation,
         IMetadataGenerator metadata,
+        IExporterMetrics metrics,
         ExportValidationOptions validationOptions,
         FileExportOptions fileExportOptions,
         ILogger<SinkStage> logger)
@@ -41,6 +44,7 @@ public sealed class SinkStage
         _clock = clock;
         _validation = validation;
         _metadata = metadata;
+        _metrics = metrics;
         _validationOptions = validationOptions;
         _fileExportOptions = fileExportOptions;
         _logger = logger;
@@ -72,6 +76,7 @@ public sealed class SinkStage
         {
             var descriptor = prepared.Descriptor;
             var sw = Stopwatch.StartNew();
+            var sinkSucceeded = false;
             ExportOutcome outcome;
 
             try
@@ -80,6 +85,8 @@ public sealed class SinkStage
                     ResiliencePipelineNames.DiskWrite,
                     ct => new ValueTask<DocumentSinkResult>(_sink.WriteAsync(descriptor, prepared.ContentStream.Content, ct)),
                     cancellationToken).ConfigureAwait(false);
+
+                sinkSucceeded = true;
 
                 // Post-write validation — file exists / size / extension / checksum / etc.
                 // A failed validation downgrades the outcome; retryable failures propagate
@@ -109,6 +116,7 @@ public sealed class SinkStage
                         AttemptNumber = prepared.AttemptNumber,
                     };
                     PipelineTelemetry.DocumentsFailed.Add(1);
+                    _metrics.RecordOutcome(DocumentOutcome.Failed, result.BytesWritten, sw.Elapsed);
                 }
                 else
                 {
@@ -132,6 +140,7 @@ public sealed class SinkStage
 
                     PipelineTelemetry.DocumentsSucceeded.Add(1);
                     PipelineTelemetry.BytesWritten.Add(result.BytesWritten);
+                    _metrics.RecordOutcome(DocumentOutcome.Succeeded, result.BytesWritten, sw.Elapsed);
                 }
             }
             catch (OperationCanceledException)
@@ -153,12 +162,14 @@ public sealed class SinkStage
                     AttemptNumber = prepared.AttemptNumber,
                 };
                 PipelineTelemetry.DocumentsFailed.Add(1);
+                _metrics.RecordOutcome(DocumentOutcome.Failed, bytesWritten: 0, sw.Elapsed);
             }
             finally
             {
                 await prepared.ContentStream.DisposeAsync().ConfigureAwait(false);
                 sw.Stop();
                 PipelineTelemetry.DocumentDurationMs.Record(sw.Elapsed.TotalMilliseconds);
+                _metrics.RecordSinkLatency(sw.Elapsed, sinkSucceeded);
             }
 
             await _channels.Outcomes.Writer.WriteAsync(outcome, cancellationToken).ConfigureAwait(false);

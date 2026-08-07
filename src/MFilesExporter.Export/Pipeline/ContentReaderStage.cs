@@ -1,4 +1,6 @@
+using System.Diagnostics;
 using MFilesExporter.Application.Abstractions;
+using MFilesExporter.Application.Abstractions.Monitoring;
 using MFilesExporter.Configuration.Options;
 using MFilesExporter.Domain.Documents;
 using MFilesExporter.Domain.Exceptions;
@@ -14,6 +16,7 @@ public sealed class ContentReaderStage
     private readonly PipelineOptions _options;
     private readonly IResiliencePipelineProvider _resilience;
     private readonly IClock _clock;
+    private readonly IExporterMetrics _metrics;
     private readonly ILogger<ContentReaderStage> _logger;
 
     public ContentReaderStage(
@@ -22,6 +25,7 @@ public sealed class ContentReaderStage
         PipelineOptions options,
         IResiliencePipelineProvider resilience,
         IClock clock,
+        IExporterMetrics metrics,
         ILogger<ContentReaderStage> logger)
     {
         _reader = reader;
@@ -29,6 +33,7 @@ public sealed class ContentReaderStage
         _options = options;
         _resilience = resilience;
         _clock = clock;
+        _metrics = metrics;
         _logger = logger;
     }
 
@@ -59,6 +64,8 @@ public sealed class ContentReaderStage
 
         await foreach (var descriptor in enumeration.ReadAllAsync(cancellationToken).ConfigureAwait(false))
         {
+            var sqlSw = Stopwatch.StartNew();
+            var sqlOk = false;
             try
             {
                 var stream = await _resilience.ExecuteAsync(
@@ -66,11 +73,14 @@ public sealed class ContentReaderStage
                     ct => new ValueTask<DocumentContentStream>(_reader.OpenAsync(descriptor.DataFileVersionKey, ct)),
                     cancellationToken).ConfigureAwait(false);
 
+                sqlOk = true;
+                _metrics.RecordSqlLatency("sql.blob-read", sqlSw.Elapsed, succeeded: true);
                 await outContent.WriteAsync(new PreparedDocument(descriptor, stream, 1), cancellationToken).ConfigureAwait(false);
             }
             catch (DocumentContentMissingException missing)
             {
                 _logger.LogWarning(missing, "Content missing for {Key}", missing.Key);
+                _metrics.RecordSqlLatency("sql.blob-read", sqlSw.Elapsed, succeeded: false);
                 await _channels.Outcomes.Writer.WriteAsync(new ExportOutcome
                 {
                     IdempotencyKey = descriptor.IdempotencyKey,
@@ -83,6 +93,7 @@ public sealed class ContentReaderStage
                     AttemptNumber = 1,
                 }, cancellationToken).ConfigureAwait(false);
                 PipelineTelemetry.DocumentsSkipped.Add(1);
+                _metrics.RecordOutcome(DocumentOutcome.Skipped, bytesWritten: 0, sqlSw.Elapsed);
             }
             catch (OperationCanceledException)
             {
@@ -91,6 +102,7 @@ public sealed class ContentReaderStage
             catch (Exception ex)
             {
                 _logger.LogError(ex, "Worker {WorkerId} content-fetch failed for {Key}", workerId, descriptor.DataFileVersionKey);
+                if (!sqlOk) _metrics.RecordSqlLatency("sql.blob-read", sqlSw.Elapsed, succeeded: false);
                 await _channels.Outcomes.Writer.WriteAsync(new ExportOutcome
                 {
                     IdempotencyKey = descriptor.IdempotencyKey,
@@ -103,6 +115,7 @@ public sealed class ContentReaderStage
                     AttemptNumber = 1,
                 }, cancellationToken).ConfigureAwait(false);
                 PipelineTelemetry.DocumentsFailed.Add(1);
+                _metrics.RecordOutcome(DocumentOutcome.Failed, bytesWritten: 0, sqlSw.Elapsed);
             }
         }
     }

@@ -1,5 +1,6 @@
 using System.Threading.Channels;
 using MFilesExporter.Application.Abstractions;
+using MFilesExporter.Application.Abstractions.Monitoring;
 using MFilesExporter.Configuration.Options;
 using MFilesExporter.Domain.Documents;
 using Microsoft.Extensions.Logging;
@@ -14,6 +15,7 @@ public sealed class ProducerStage
     private readonly PipelineOptions _pipelineOptions;
     private readonly MFilesSourceOptions _sourceOptions;
     private readonly IResiliencePipelineProvider _resilience;
+    private readonly IExporterMetrics _metrics;
     private readonly ILogger<ProducerStage> _logger;
 
     public ProducerStage(
@@ -23,6 +25,7 @@ public sealed class ProducerStage
         PipelineOptions pipelineOptions,
         MFilesSourceOptions sourceOptions,
         IResiliencePipelineProvider resilience,
+        IExporterMetrics metrics,
         ILogger<ProducerStage> logger)
     {
         _enumerator = enumerator;
@@ -31,6 +34,7 @@ public sealed class ProducerStage
         _pipelineOptions = pipelineOptions;
         _sourceOptions = sourceOptions;
         _resilience = resilience;
+        _metrics = metrics;
         _logger = logger;
     }
 
@@ -54,6 +58,7 @@ public sealed class ProducerStage
                     continue;
                 }
 
+                _metrics.RecordEnumerated();
                 pending.Add(descriptor);
                 if (pending.Count >= _sourceOptions.EnumerationBatchSize)
                 {
