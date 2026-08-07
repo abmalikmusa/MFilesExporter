@@ -147,6 +147,7 @@ Every subsystem has a dedicated design doc.
 - [Monitoring](docs/monitoring.md) — OpenTelemetry + Prometheus + Grafana
 - [Console dashboard](docs/console-dashboard.md) — Spectre.Console live view
 - [Status reports](docs/status-reports.md) — `--status` CLI + SQL query pack (no external stack)
+- [Throughput](docs/throughput.md) — measured scaling curve + tuning notes
 
 **Deployment**
 - [Deployment runbook](docs/deployment-runbook.md) — **start here** — zero-to-running walkthrough
