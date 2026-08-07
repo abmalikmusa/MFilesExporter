@@ -16,6 +16,7 @@
     <ProjectReference Include="..\..\src\MFilesExporter.Export\MFilesExporter.Export.csproj" />
     <ProjectReference Include="..\..\src\MFilesExporter.Reporting\MFilesExporter.Reporting.csproj" />
     <ProjectReference Include="..\..\src\MFilesExporter.Infrastructure\MFilesExporter.Infrastructure.csproj" />
+    <ProjectReference Include="..\..\src\MFilesExporter.Console\MFilesExporter.Console.csproj" />
   </ItemGroup>
 
   <ItemGroup>

@@ -7,10 +7,10 @@
  * ========================================================================= */
 SELECT
     PartitionKey,
-    DocumentFilePart,
-    VersionPart,
-    DataFileVersion,
-    SavedAtUtc,
-    SavedByWorker
+    LastDocumentFilePartId,
+    LastVersionPartId,
+    DocumentsProcessedInPartition,
+    CheckpointAtUtc,
+    AgeSeconds
 FROM   dbo.vw_CheckpointCurrent
 ORDER  BY PartitionKey;

@@ -15,7 +15,7 @@ namespace MFilesExporter.Console;
 /// and never blocks on writes; queries take &lt; 1 second against a tracking
 /// DB with a running job.
 /// </remarks>
-internal static class StatusCommand
+public static class StatusCommand
 {
     public const string FlagName = "--status";
 
@@ -45,25 +45,41 @@ internal static class StatusCommand
             return 2;
         }
 
+        return await RunAgainstAsync(connectionString, System.Console.Out, cancellationToken).ConfigureAwait(false);
+    }
+
+    /// <summary>
+    /// Test-friendly entry point. Bypasses appsettings.json discovery and
+    /// writes to the supplied <paramref name="output"/> so tests can assert
+    /// on captured strings instead of process stdout.
+    /// </summary>
+    public static async Task<int> RunAgainstAsync(
+        string connectionString,
+        TextWriter output,
+        CancellationToken cancellationToken)
+    {
+        ArgumentException.ThrowIfNullOrWhiteSpace(connectionString);
+        ArgumentNullException.ThrowIfNull(output);
+
         try
         {
             await using var conn = new SqlConnection(connectionString);
             await conn.OpenAsync(cancellationToken).ConfigureAwait(false);
 
-            WriteHeader("Status summary");
-            await RunAndPrintAsync(conn, StatusSql, cancellationToken).ConfigureAwait(false);
+            WriteHeader(output, "Status summary");
+            await RunAndPrintAsync(output, conn, StatusSql, cancellationToken).ConfigureAwait(false);
 
-            WriteHeader("Outcomes");
-            await RunAndPrintAsync(conn, OutcomesSql, cancellationToken).ConfigureAwait(false);
+            WriteHeader(output, "Outcomes");
+            await RunAndPrintAsync(output, conn, OutcomesSql, cancellationToken).ConfigureAwait(false);
 
-            WriteHeader("Workers");
-            await RunAndPrintAsync(conn, WorkersSql, cancellationToken).ConfigureAwait(false);
+            WriteHeader(output, "Workers");
+            await RunAndPrintAsync(output, conn, WorkersSql, cancellationToken).ConfigureAwait(false);
 
-            WriteHeader("Failures by category (top 10)");
-            await RunAndPrintAsync(conn, FailuresSql, cancellationToken).ConfigureAwait(false);
+            WriteHeader(output, "Failures by category (top 10)");
+            await RunAndPrintAsync(output, conn, FailuresSql, cancellationToken).ConfigureAwait(false);
 
-            WriteHeader("Checkpoint");
-            await RunAndPrintAsync(conn, CheckpointSql, cancellationToken).ConfigureAwait(false);
+            WriteHeader(output, "Checkpoint");
+            await RunAndPrintAsync(output, conn, CheckpointSql, cancellationToken).ConfigureAwait(false);
 
             return 0;
         }
@@ -78,16 +94,16 @@ internal static class StatusCommand
     // Rendering
     // -----------------------------------------------------------------------
 
-    private static void WriteHeader(string title)
+    private static void WriteHeader(TextWriter output, string title)
     {
-        System.Console.WriteLine();
+        output.WriteLine();
         var bar = new string('─', Math.Max(24, title.Length + 8));
-        System.Console.WriteLine(bar);
-        System.Console.WriteLine($" {title}");
-        System.Console.WriteLine(bar);
+        output.WriteLine(bar);
+        output.WriteLine($" {title}");
+        output.WriteLine(bar);
     }
 
-    private static async Task RunAndPrintAsync(SqlConnection conn, string sql, CancellationToken ct)
+    private static async Task RunAndPrintAsync(TextWriter output, SqlConnection conn, string sql, CancellationToken ct)
     {
         await using var cmd = new SqlCommand(sql, conn) { CommandTimeout = 15 };
         await using var reader = await cmd.ExecuteReaderAsync(ct).ConfigureAwait(false);
@@ -116,30 +132,30 @@ internal static class StatusCommand
 
         if (rows.Count == 0)
         {
-            System.Console.WriteLine(" (no rows)");
+            output.WriteLine(" (no rows)");
             return;
         }
 
         // Header
         for (var i = 0; i < columns.Length; i++)
         {
-            System.Console.Write(columns[i].PadRight(widths[i] + 2));
+            output.Write(columns[i].PadRight(widths[i] + 2));
         }
-        System.Console.WriteLine();
+        output.WriteLine();
         for (var i = 0; i < columns.Length; i++)
         {
-            System.Console.Write(new string('-', widths[i]).PadRight(widths[i] + 2));
+            output.Write(new string('-', widths[i]).PadRight(widths[i] + 2));
         }
-        System.Console.WriteLine();
+        output.WriteLine();
 
         // Rows
         foreach (var row in rows)
         {
             for (var i = 0; i < row.Length; i++)
             {
-                System.Console.Write(row[i].PadRight(widths[i] + 2));
+                output.Write(row[i].PadRight(widths[i] + 2));
             }
-            System.Console.WriteLine();
+            output.WriteLine();
         }
     }
 
@@ -225,7 +241,12 @@ GROUP  BY ErrorCategory, ErrorSeverity
 ORDER  BY COUNT(*) DESC;";
 
     private const string CheckpointSql = @"
-SELECT PartitionKey, DocumentFilePart, VersionPart, DataFileVersion, SavedAtUtc, SavedByWorker
+SELECT PartitionKey,
+       LastDocumentFilePartId,
+       LastVersionPartId,
+       DocumentsProcessedInPartition,
+       CheckpointAtUtc,
+       AgeSeconds
 FROM   dbo.vw_CheckpointCurrent
 ORDER  BY PartitionKey;";
 }
