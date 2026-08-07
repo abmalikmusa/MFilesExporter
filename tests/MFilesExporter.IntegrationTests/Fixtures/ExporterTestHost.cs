@@ -26,22 +26,46 @@ namespace MFilesExporter.IntegrationTests.Fixtures;
 public sealed class ExporterTestHost : IAsyncDisposable
 {
     private readonly IHost _host;
+    private readonly bool _ownsOutputRoot;
 
     public string OutputRoot { get; }
+    public string PartitionKey { get; }
 
-    private ExporterTestHost(IHost host, string outputRoot)
+    private ExporterTestHost(IHost host, string outputRoot, string partitionKey, bool ownsOutputRoot)
     {
         _host = host;
         OutputRoot = outputRoot;
+        PartitionKey = partitionKey;
+        _ownsOutputRoot = ownsOutputRoot;
     }
 
     public IServiceProvider Services => _host.Services;
 
     public IExportPipeline Pipeline => _host.Services.GetRequiredService<IExportPipeline>();
 
-    public static ExporterTestHost Create(SqlServerFixture sql, int workerCount = 4)
+    /// <summary>
+    /// Creates a host with a fresh temp output root. The host owns the
+    /// directory and deletes it on <see cref="DisposeAsync"/>.
+    /// </summary>
+    public static ExporterTestHost Create(SqlServerFixture sql, int workerCount = 4, string partitionKey = "test")
     {
         var outputRoot = Path.Combine(Path.GetTempPath(), "mfilesexporter-it-" + Guid.NewGuid().ToString("N"));
+        return CreateInternal(sql, workerCount, partitionKey, outputRoot, ownsOutputRoot: true);
+    }
+
+    /// <summary>
+    /// Creates a host bound to an existing output root — used by the resume
+    /// test to prove that a second process picks up where the first left off.
+    /// Caller owns cleanup.
+    /// </summary>
+    public static ExporterTestHost CreateSharing(SqlServerFixture sql, string outputRoot, int workerCount, string partitionKey)
+    {
+        return CreateInternal(sql, workerCount, partitionKey, outputRoot, ownsOutputRoot: false);
+    }
+
+    private static ExporterTestHost CreateInternal(
+        SqlServerFixture sql, int workerCount, string partitionKey, string outputRoot, bool ownsOutputRoot)
+    {
         Directory.CreateDirectory(outputRoot);
         Directory.CreateDirectory(Path.Combine(outputRoot, "documents"));
         Directory.CreateDirectory(Path.Combine(outputRoot, "metadata"));
@@ -51,7 +75,7 @@ public sealed class ExporterTestHost : IAsyncDisposable
         var configValues = new Dictionary<string, string?>
         {
             ["Exporter:Source:ConnectionString"]                 = sql.SourceConnectionString,
-            ["Exporter:Source:PartitionKey"]                     = "test",
+            ["Exporter:Source:PartitionKey"]                     = partitionKey,
             ["Exporter:Source:EnumerationBatchSize"]             = "50",
             ["Exporter:TrackingDatabase:ConnectionString"]       = sql.TrackingConnectionString,
             ["Exporter:StateStore:ConnectionString"]             = Path.Combine(outputRoot, "state.db"),
@@ -70,6 +94,9 @@ public sealed class ExporterTestHost : IAsyncDisposable
             ["Exporter:Pipeline:SinkConcurrency"]                = workerCount.ToString(),
             ["Exporter:Pipeline:EnumerationChannelCapacity"]     = "200",
             ["Exporter:Pipeline:ContentChannelCapacity"]         = "32",
+            ["Exporter:Pipeline:OutcomeBatchSize"]               = "5",
+            ["Exporter:Pipeline:OutcomeBatchFlushInterval"]      = "00:00:00.500",
+            ["Exporter:Pipeline:CheckpointFlushInterval"]        = "00:00:00.500",
             ["Exporter:ParallelProcessing:WorkerCount"]          = workerCount.ToString(),
             ["Exporter:ParallelProcessing:ChannelCapacity"]      = "64",
             ["Exporter:Dashboard:Enabled"]                       = "false",
@@ -100,13 +127,16 @@ public sealed class ExporterTestHost : IAsyncDisposable
         builder.Services.AddExporterApplication();
 
         var host = builder.Build();
-        return new ExporterTestHost(host, outputRoot);
+        return new ExporterTestHost(host, outputRoot, partitionKey, ownsOutputRoot);
     }
 
     public async ValueTask DisposeAsync()
     {
         await _host.StopAsync().ConfigureAwait(false);
         _host.Dispose();
-        try { Directory.Delete(OutputRoot, recursive: true); } catch { /* best effort */ }
+        if (_ownsOutputRoot)
+        {
+            try { Directory.Delete(OutputRoot, recursive: true); } catch { /* best effort */ }
+        }
     }
 }

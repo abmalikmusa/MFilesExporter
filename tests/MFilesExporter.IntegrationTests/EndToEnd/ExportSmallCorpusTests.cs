@@ -25,8 +25,10 @@ public sealed class ExportSmallCorpusTests
     public async Task ExportsAllDocuments_WithMatchingChecksums()
     {
         // -----------------------------------------------------------------
-        // Arrange — seed the vault, initialize the state store, start the host.
+        // Arrange — clear the vault (shared collection), seed our corpus,
+        // initialize the state store, start the host.
         // -----------------------------------------------------------------
+        await VaultSeeder.ResetAsync(_sql.SourceConnectionString).ConfigureAwait(false);
         var seeded = await VaultSeeder.SeedAsync(_sql.SourceConnectionString, CorpusSize)
             .ConfigureAwait(false);
 

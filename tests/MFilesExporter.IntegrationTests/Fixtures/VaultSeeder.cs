@@ -23,19 +23,34 @@ public static class VaultSeeder
         byte[] Payload,
         string ExpectedSha256Hex);
 
+    /// <summary>Drops every row from the three synthetic vault tables. Safe between tests within the same collection.</summary>
+    public static async Task ResetAsync(string vaultConnectionString)
+    {
+        await using var conn = new SqlConnection(vaultConnectionString);
+        await conn.OpenAsync().ConfigureAwait(false);
+        await using var cmd = new SqlCommand("""
+            DELETE FROM dbo.DATAFILEVERSION_BYTES;
+            DELETE FROM dbo.DOCUMENTFILEVERSION;
+            DELETE FROM dbo.DATAFILEVERSION;
+        """, conn) { CommandTimeout = 30 };
+        await cmd.ExecuteNonQueryAsync().ConfigureAwait(false);
+    }
+
     public static async Task<IReadOnlyList<SeededDocument>> SeedAsync(
         string vaultConnectionString,
         int documentCount,
-        int seed = 42)
+        int seed = 42,
+        long partStartId = 1_000_000L,
+        long dfvStartId  = 5_000_000L)
     {
         var docs = new List<SeededDocument>(documentCount);
         var rng  = new Random(seed);
 
         for (var i = 0; i < documentCount; i++)
         {
-            var part    = 1_000_000L + i;
+            var part    = partStartId + i;
             var version = 1;
-            var dfv     = 5_000_000L + i;
+            var dfv     = dfvStartId + i;
 
             // Sizes distributed across three buckets: small (60 %), medium
             // (30 %), large (10 %). Keeps the run realistic without ballooning
