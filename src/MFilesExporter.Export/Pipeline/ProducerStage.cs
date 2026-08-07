@@ -1,6 +1,7 @@
 using System.Threading.Channels;
 using MFilesExporter.Application.Abstractions;
 using MFilesExporter.Application.Abstractions.Monitoring;
+using MFilesExporter.Application.Abstractions.Retry;
 using MFilesExporter.Configuration.Options;
 using MFilesExporter.Domain.Documents;
 using Microsoft.Extensions.Logging;
@@ -14,7 +15,7 @@ public sealed class ProducerStage
     private readonly PipelineChannels _channels;
     private readonly PipelineOptions _pipelineOptions;
     private readonly MFilesSourceOptions _sourceOptions;
-    private readonly IResiliencePipelineProvider _resilience;
+    private readonly IRetryExecutor _resilience;
     private readonly IExporterMetrics _metrics;
     private readonly ILogger<ProducerStage> _logger;
 
@@ -24,7 +25,7 @@ public sealed class ProducerStage
         PipelineChannels channels,
         PipelineOptions pipelineOptions,
         MFilesSourceOptions sourceOptions,
-        IResiliencePipelineProvider resilience,
+        IRetryExecutor resilience,
         IExporterMetrics metrics,
         ILogger<ProducerStage> logger)
     {
@@ -96,7 +97,7 @@ public sealed class ProducerStage
         foreach (var d in batch) keys.Add(d.IdempotencyKey);
 
         var statuses = await _resilience.ExecuteAsync(
-            ResiliencePipelineNames.StateStore,
+            RetryOperationNames.StateStore,
             ct => new ValueTask<IReadOnlyDictionary<IdempotencyKey, ExportStatus>>(
                 _stateStore.GetStatusesAsync(keys, ct)),
             cancellationToken).ConfigureAwait(false);

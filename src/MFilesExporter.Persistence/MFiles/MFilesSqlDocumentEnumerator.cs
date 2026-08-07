@@ -1,6 +1,7 @@
 using System.Data;
 using System.Runtime.CompilerServices;
 using MFilesExporter.Application.Abstractions;
+using MFilesExporter.Application.Abstractions.Retry;
 using MFilesExporter.Configuration.Options;
 using MFilesExporter.Domain.Documents;
 using Microsoft.Data.SqlClient;
@@ -12,13 +13,13 @@ internal sealed class MFilesSqlDocumentEnumerator : IDocumentEnumerator
 {
     private readonly ISqlConnectionFactory _connectionFactory;
     private readonly MFilesSourceOptions _options;
-    private readonly IResiliencePipelineProvider _resilience;
+    private readonly IRetryExecutor _resilience;
     private readonly ILogger<MFilesSqlDocumentEnumerator> _logger;
 
     public MFilesSqlDocumentEnumerator(
         ISqlConnectionFactory connectionFactory,
         MFilesSourceOptions options,
-        IResiliencePipelineProvider resilience,
+        IRetryExecutor resilience,
         ILogger<MFilesSqlDocumentEnumerator> logger)
     {
         _connectionFactory = connectionFactory;
@@ -38,7 +39,7 @@ internal sealed class MFilesSqlDocumentEnumerator : IDocumentEnumerator
         while (true)
         {
             var batch = await _resilience.ExecuteAsync(
-                ResiliencePipelineNames.SqlRead,
+                RetryOperationNames.SqlRead,
                 ct => new ValueTask<IReadOnlyList<DocumentDescriptor>>(FetchBatchAsync(sql, cursor, batchSize, ct)),
                 cancellationToken).ConfigureAwait(false);
 

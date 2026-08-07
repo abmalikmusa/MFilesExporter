@@ -1,4 +1,5 @@
 using MFilesExporter.Application.Abstractions;
+using MFilesExporter.Application.Abstractions.Retry;
 using MFilesExporter.Configuration.Options;
 using MFilesExporter.Domain.Documents;
 using MFilesExporter.Export.Checkpointing;
@@ -18,7 +19,7 @@ public sealed class OutcomeCollectorStage
     private readonly IManifestWriter _manifestWriter;
     private readonly PipelineOptions _pipelineOptions;
     private readonly MFilesSourceOptions _sourceOptions;
-    private readonly IResiliencePipelineProvider _resilience;
+    private readonly IRetryExecutor _resilience;
     private readonly ICheckpointEngine _checkpointEngine;
     private readonly ILogger<OutcomeCollectorStage> _logger;
 
@@ -30,7 +31,7 @@ public sealed class OutcomeCollectorStage
         IManifestWriter manifestWriter,
         PipelineOptions pipelineOptions,
         MFilesSourceOptions sourceOptions,
-        IResiliencePipelineProvider resilience,
+        IRetryExecutor resilience,
         ICheckpointEngine checkpointEngine,
         ILogger<OutcomeCollectorStage> logger)
     {
@@ -189,7 +190,7 @@ public sealed class OutcomeCollectorStage
         // Layer 3 — SQLite state store. Behind the retry provider because it
         // is the layer local ops depends on (`--status`, resume).
         await _resilience.ExecuteAsync(
-            ResiliencePipelineNames.StateStore,
+            RetryOperationNames.StateStore,
             ct => new ValueTask(_stateStore.SaveCheckpointAsync(_sourceOptions.PartitionKey, cursor, ct)),
             cancellationToken).ConfigureAwait(false);
     }
@@ -200,7 +201,7 @@ public sealed class OutcomeCollectorStage
         try
         {
             await _resilience.ExecuteAsync(
-                ResiliencePipelineNames.StateStore,
+                RetryOperationNames.StateStore,
                 ct => new ValueTask(_stateStore.RecordOutcomesAsync(batch, ct)),
                 cancellationToken).ConfigureAwait(false);
         }

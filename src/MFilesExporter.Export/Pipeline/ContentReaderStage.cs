@@ -1,6 +1,7 @@
 using System.Diagnostics;
 using MFilesExporter.Application.Abstractions;
 using MFilesExporter.Application.Abstractions.Monitoring;
+using MFilesExporter.Application.Abstractions.Retry;
 using MFilesExporter.Configuration.Options;
 using MFilesExporter.Domain.Documents;
 using MFilesExporter.Domain.Exceptions;
@@ -14,7 +15,7 @@ public sealed class ContentReaderStage
     private readonly IDocumentContentReader _reader;
     private readonly PipelineChannels _channels;
     private readonly PipelineOptions _options;
-    private readonly IResiliencePipelineProvider _resilience;
+    private readonly IRetryExecutor _resilience;
     private readonly IClock _clock;
     private readonly IExporterMetrics _metrics;
     private readonly ILogger<ContentReaderStage> _logger;
@@ -23,7 +24,7 @@ public sealed class ContentReaderStage
         IDocumentContentReader reader,
         PipelineChannels channels,
         PipelineOptions options,
-        IResiliencePipelineProvider resilience,
+        IRetryExecutor resilience,
         IClock clock,
         IExporterMetrics metrics,
         ILogger<ContentReaderStage> logger)
@@ -69,7 +70,7 @@ public sealed class ContentReaderStage
             try
             {
                 var stream = await _resilience.ExecuteAsync(
-                    ResiliencePipelineNames.SqlBlobRead,
+                    RetryOperationNames.SqlBlobRead,
                     ct => new ValueTask<DocumentContentStream>(_reader.OpenAsync(descriptor.DataFileVersionKey, ct)),
                     cancellationToken).ConfigureAwait(false);
 

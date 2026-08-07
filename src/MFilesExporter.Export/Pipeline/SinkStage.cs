@@ -2,6 +2,7 @@ using System.Diagnostics;
 using MFilesExporter.Application.Abstractions;
 using MFilesExporter.Application.Abstractions.Dashboard;
 using MFilesExporter.Application.Abstractions.Monitoring;
+using MFilesExporter.Application.Abstractions.Retry;
 using MFilesExporter.Configuration.Options;
 using MFilesExporter.Domain.Documents;
 using MFilesExporter.Export.Metadata;
@@ -16,7 +17,7 @@ public sealed class SinkStage
     private readonly IDocumentSink _sink;
     private readonly PipelineChannels _channels;
     private readonly PipelineOptions _options;
-    private readonly IResiliencePipelineProvider _resilience;
+    private readonly IRetryExecutor _resilience;
     private readonly IClock _clock;
     private readonly IExportValidationPipeline _validation;
     private readonly IMetadataGenerator _metadata;
@@ -30,7 +31,7 @@ public sealed class SinkStage
         IDocumentSink sink,
         PipelineChannels channels,
         PipelineOptions options,
-        IResiliencePipelineProvider resilience,
+        IRetryExecutor resilience,
         IClock clock,
         IExportValidationPipeline validation,
         IMetadataGenerator metadata,
@@ -92,7 +93,7 @@ public sealed class SinkStage
             try
             {
                 var result = await _resilience.ExecuteAsync(
-                    ResiliencePipelineNames.DiskWrite,
+                    RetryOperationNames.DiskWrite,
                     ct => new ValueTask<DocumentSinkResult>(_sink.WriteAsync(descriptor, prepared.ContentStream.Content, ct)),
                     cancellationToken).ConfigureAwait(false);
 
