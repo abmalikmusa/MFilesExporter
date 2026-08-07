@@ -23,7 +23,7 @@ namespace MFilesExporter.IntegrationTests.EndToEnd;
 [Trait("Category", "Performance")]
 public sealed class ThroughputBenchmarkTests
 {
-    private const int CorpusSize   = 5_000;
+    private const int CorpusSize   = 20_000;
     private const int WorkerCount  = 8;
     private const string Partition = "perf";
 
@@ -116,7 +116,7 @@ public sealed class ThroughputBenchmarkTests
 
         _output.WriteLine("");
         _output.WriteLine("────────────────────────────────────────────────────");
-        _output.WriteLine($" Throughput benchmark — 5,000 doc corpus ({tag})");
+        _output.WriteLine($" Throughput benchmark — {CorpusSize:N0} doc corpus ({tag})");
         _output.WriteLine("────────────────────────────────────────────────────");
         _output.WriteLine($" Workers                     {workers,10}");
         _output.WriteLine($" Documents processed         {CorpusSize,10:N0}");
