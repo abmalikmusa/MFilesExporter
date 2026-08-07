@@ -136,10 +136,11 @@ same interface — no changes to handlers.
 ### Pipeline
 | Type | Kind | Handler responsibility |
 |---|---|---|
-| `RunExportCommand` | ICommand<ExportRunSummary> | Full lifecycle: StartJob → RegisterWorker → RunPipeline → StopWorker → CompleteJob. Always transitions to a terminal state, even on cancellation. |
+| `RunExportCommand` | ICommand<RunExportSummary> | Full lifecycle: StartJob → RegisterWorker → RunPipeline → StopWorker → CompleteJob. Always transitions to a terminal state, even on cancellation. Populates `IJobContext` so the checkpoint engine's tracking-DB layer can attribute writes to a real `ExportJobId`. |
 
-The legacy `ExportOrchestrator` is kept for existing Console-hosted flows;
-new callers should invoke `RunExportCommand` via the dispatcher.
+`ExportHostedService` dispatches `RunExportCommand` at startup — it is
+the single entry point for a run. The CQRS pipeline is authoritative;
+there is no direct-call orchestrator any more.
 
 ---
 
@@ -193,11 +194,12 @@ services.AddExporterApplication();
 ```
 
 This registers:
-- `ExportOrchestrator` (legacy path).
 - `ApplicationDispatcher` (inner) + `LoggingApplicationDispatcher`
   (decorator) as `IApplicationDispatcher`.
 - Every command handler and query handler as their interface.
 - `RunExportHandler` for the top-level orchestration command.
+- `IJobContext` (singleton) — ambient scope populated by
+  `RunExportHandler` and read by the checkpoint engine.
 
 Handlers are registered as singletons because they hold no per-request
 state; ports they depend on (repositories) are themselves singletons.

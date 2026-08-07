@@ -21,7 +21,7 @@ Every KPI required to run a 5-million-document export in production:
 | CPU                   | `process_cpu_time_seconds_total`        | Same |
 | GC / thread-pool      | `dotnet_*` counters                     | Same |
 | Disk free             | `...disk.free_bytes`, `disk.free_ratio` | `ObservableGaugeRegistry` |
-| SQL latency           | `...sql.latency` (histogram)            | `IExporterMetrics.RecordSqlLatency` / `SqlLatencyScope` |
+| SQL latency           | `...sql.latency` (histogram)            | `IExporterMetrics.RecordSqlLatency` |
 | Sink latency          | `...sink.latency` (histogram)           | `IExporterMetrics.RecordSinkLatency` |
 | Retry count           | `...retries.total`                      | `MetricsRetryObserver` (retry engine) |
 | Circuit-breaker state | logged (INFO/WARN)                      | `OperationCircuitBreaker` |
@@ -129,16 +129,10 @@ public sealed class SinkStage
 }
 ```
 
-SQL layers use `SqlLatencyScope`:
-
-```csharp
-using (var scope = SqlLatencyScope.Start(_metrics, "sql.enumerate"))
-{
-    await using var reader = await command.ExecuteReaderAsync(ct);
-    …
-    scope.Succeed();
-}
-```
+SQL layers time their calls with `Stopwatch` and pass the elapsed time
+straight to `IExporterMetrics.RecordSqlLatency` with a status tag —
+one call, per-operation dimension. See `ContentReaderStage.WorkerLoopAsync`
+for the canonical pattern.
 
 ## 5. Publishing queue / worker / progress signals
 

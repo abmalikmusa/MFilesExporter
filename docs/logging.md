@@ -30,7 +30,6 @@ All file sinks use the compact-JSON formatter and are wrapped in
 | `LogCategories`                   | Constants for the `Category` property (`Application`, `Audit`, `Performance`, `Worker`). |
 | `ICorrelationIdAccessor`          | Ambient correlation-id scope. AsyncLocal-backed. |
 | `CorrelationIdEnricher`           | Belt-and-braces enricher — stamps `CorrelationId` when the caller forgot to push. |
-| `IPerformanceLogger` / `PerformanceScope` | RAII latency measurement — one JSON line per operation, always emitted (even on throw). |
 | `IAuditLog` / `AuditEvent`        | Compliance-grade audit trail. |
 | `WorkerLogScope`                  | `IDisposable` that stamps `WorkerId` + `WorkerName` on every downstream log. |
 
@@ -76,27 +75,15 @@ so:
 - `CorrelationIdEnricher` fills in `no-scope` if a log line escapes the scope
   — so filtered queries never drop untagged events.
 
-## 5. Performance logging
+## 5. Latency measurement
 
-Use `IPerformanceLogger` for anything you care about latency-wise. The scope
-emits a single JSON record on `Dispose`, even when the enclosing code throws:
-
-```csharp
-using var scope = _perf.Begin("sink.write");
-scope.SetTag("path", path);
-await sink.WriteAsync(doc, ct);
-scope.Complete(bytes: doc.Size);
-```
-
-Or the delegate flavour:
-
-```csharp
-var blob = await _perf.TimeAsync("sql.blob-read",
-    ct => reader.ReadAsync(id, ct), ct);
-```
-
-Failure paths automatically annotate `outcome=failed` and include the exception,
-so latency SLOs can be sliced by success vs failure.
+Latency lives in the metrics layer (`docs/monitoring.md`), not a
+separate logging surface. Every stage records via
+`IExporterMetrics.RecordSqlLatency` / `.RecordSinkLatency` / the
+`mfilesexporter.document.duration` histogram — those percentiles are
+what dashboards and SLOs consume. The Serilog `Category=Performance`
+value remains as a filter target for callers that want to co-locate a
+perf event with the rest of their structured logs.
 
 ## 6. Audit logging
 
@@ -193,8 +180,8 @@ builder.Services.AddSerilog((sp, cfg) => cfg
 ```
 
 `AddExporterLogging` registers `ICorrelationIdAccessor`, `IAuditLog`,
-`IPerformanceLogger`, and the `CorrelationIdEnricher` — the enricher is
-picked up automatically via `ReadFrom.Services(sp)`.
+and the `CorrelationIdEnricher` — the enricher is picked up
+automatically via `ReadFrom.Services(sp)`.
 
 ## 10. Sample log output
 
