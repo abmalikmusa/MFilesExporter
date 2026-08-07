@@ -62,10 +62,21 @@ public sealed class ExportPipeline : IExportPipeline
 
         try
         {
-            await producerTask.ConfigureAwait(false);
-            await contentTask.ConfigureAwait(false);
-            await sinkTask.ConfigureAwait(false);
-            await outcomeTask.ConfigureAwait(false);
+            // await *sequentially* to preserve original exception ordering, but
+            // wait for *every* stage before falling through — if we let
+            // sink/outcome tasks run past the top-level throw they can still
+            // be writing checkpoints/metadata after the caller has returned,
+            // producing races with test code that reads the state store.
+            var all = Task.WhenAll(producerTask, contentTask, sinkTask, outcomeTask);
+            try { await all.ConfigureAwait(false); }
+            catch
+            {
+                await producerTask.ConfigureAwait(false); // rethrow the natural order
+                await contentTask.ConfigureAwait(false);
+                await sinkTask.ConfigureAwait(false);
+                await outcomeTask.ConfigureAwait(false);
+                throw;
+            }
         }
         finally
         {

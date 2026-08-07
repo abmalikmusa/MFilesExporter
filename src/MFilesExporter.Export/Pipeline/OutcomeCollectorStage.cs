@@ -1,19 +1,28 @@
 using MFilesExporter.Application.Abstractions;
 using MFilesExporter.Configuration.Options;
 using MFilesExporter.Domain.Documents;
+using MFilesExporter.Export.Checkpointing;
 using Microsoft.Extensions.Logging;
 
 namespace MFilesExporter.Export.Pipeline;
 
 public sealed class OutcomeCollectorStage
 {
+    // JobId=0 here means "test / single-instance run" — the CheckpointEngine's
+    // SQL layer treats 0 as "skip SQL, WAL only". A future orchestrator that
+    // knows the tracking-DB job id will pass it through.
+    private const long DefaultJobId = 0;
+
     private readonly PipelineChannels _channels;
     private readonly IExportStateStore _stateStore;
     private readonly IManifestWriter _manifestWriter;
     private readonly PipelineOptions _pipelineOptions;
     private readonly MFilesSourceOptions _sourceOptions;
     private readonly IResiliencePipelineProvider _resilience;
+    private readonly ICheckpointEngine _checkpointEngine;
     private readonly ILogger<OutcomeCollectorStage> _logger;
+
+    private long _documentsProcessed;
 
     public OutcomeCollectorStage(
         PipelineChannels channels,
@@ -22,6 +31,7 @@ public sealed class OutcomeCollectorStage
         PipelineOptions pipelineOptions,
         MFilesSourceOptions sourceOptions,
         IResiliencePipelineProvider resilience,
+        ICheckpointEngine checkpointEngine,
         ILogger<OutcomeCollectorStage> logger)
     {
         _channels = channels;
@@ -30,6 +40,7 @@ public sealed class OutcomeCollectorStage
         _pipelineOptions = pipelineOptions;
         _sourceOptions = sourceOptions;
         _resilience = resilience;
+        _checkpointEngine = checkpointEngine;
         _logger = logger;
     }
 
@@ -69,7 +80,7 @@ public sealed class OutcomeCollectorStage
             var finalCp = checkpoint.Read();
             if (finalCp > DocumentFileVersionKey.Origin)
             {
-                await _stateStore.SaveCheckpointAsync(_sourceOptions.PartitionKey, finalCp, CancellationToken.None).ConfigureAwait(false);
+                await PersistCheckpointAsync(finalCp, CancellationToken.None).ConfigureAwait(false);
             }
 
             await _manifestWriter.FlushAsync(CancellationToken.None).ConfigureAwait(false);
@@ -95,6 +106,7 @@ public sealed class OutcomeCollectorStage
                 shouldFlush = batch.Count >= _pipelineOptions.OutcomeBatchSize;
             }
             checkpoint.Advance(outcome.DocumentFileVersionKey);
+            Interlocked.Increment(ref _documentsProcessed);
 
             if (shouldFlush)
             {
@@ -137,14 +149,49 @@ public sealed class OutcomeCollectorStage
                 var v = checkpoint.Read();
                 if (v > DocumentFileVersionKey.Origin)
                 {
-                    await _resilience.ExecuteAsync(
-                        ResiliencePipelineNames.StateStore,
-                        ct => new ValueTask(_stateStore.SaveCheckpointAsync(_sourceOptions.PartitionKey, v, ct)),
-                        cancellationToken).ConfigureAwait(false);
+                    await PersistCheckpointAsync(v, cancellationToken).ConfigureAwait(false);
                 }
             }
         }
         catch (OperationCanceledException) { }
+    }
+
+    private async Task PersistCheckpointAsync(DocumentFileVersionKey cursor, CancellationToken cancellationToken)
+    {
+        // Three-layer durability:
+        //   1) WAL     (crash-safe local, milliseconds)
+        //   2) SQL tracking DB (cross-node durability + audit) — via CheckpointEngine
+        //   3) State store    (SQLite local counters — read by --status, resume, etc.)
+        // All three write on every persist. Diverging layers are logged but
+        // do not fail the batch — the next save will retry and Recover picks max.
+        var processed = Interlocked.Read(ref _documentsProcessed);
+        var candidate = new CheckpointCandidate(cursor, processed);
+
+        // Layer 1 + 2 — WAL + SQL tracking DB.
+        try
+        {
+            var result = await _checkpointEngine.SaveAsync(
+                DefaultJobId, _sourceOptions.PartitionKey, candidate, cancellationToken)
+                .ConfigureAwait(false);
+
+            if (!result.WalWritten || !result.SqlWritten)
+            {
+                _logger.LogWarning(
+                    "CheckpointEngine partial: WAL={Wal} SQL={Sql} cursor={Cursor} warning={Warning}",
+                    result.WalWritten, result.SqlWritten, cursor, result.Warning);
+            }
+        }
+        catch (Exception ex)
+        {
+            _logger.LogWarning(ex, "CheckpointEngine save failed at {Cursor}; state store will still receive it", cursor);
+        }
+
+        // Layer 3 — SQLite state store. Behind the retry provider because it
+        // is the layer local ops depends on (`--status`, resume).
+        await _resilience.ExecuteAsync(
+            ResiliencePipelineNames.StateStore,
+            ct => new ValueTask(_stateStore.SaveCheckpointAsync(_sourceOptions.PartitionKey, cursor, ct)),
+            cancellationToken).ConfigureAwait(false);
     }
 
     private async Task FlushBatchAsync(IReadOnlyCollection<ExportOutcome> batch, CancellationToken cancellationToken)
