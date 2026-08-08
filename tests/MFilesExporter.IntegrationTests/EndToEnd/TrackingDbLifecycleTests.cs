@@ -46,6 +46,7 @@ public sealed class TrackingDbLifecycleTests
             await using var wipe = new SqlCommand("""
                 DELETE FROM dbo.ExportCheckpoints;
                 DELETE FROM dbo.ExportAudit;
+                DELETE FROM dbo.ExportWorkItems;
                 DELETE FROM dbo.ExportWorkers;
                 DELETE FROM dbo.ExportJobs;
             """, setup);
