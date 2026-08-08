@@ -224,8 +224,8 @@ Sample handler test structure lives under
 ## What the application layer intentionally does NOT contain
 
 - **No SQL, no filesystem, no HTTP.** Those are the outer layers.
-- **No dependency on Polly, Dapper, Microsoft.Data.SqlClient.**
-  `IResiliencePipelineProvider` is the abstraction.
+- **No dependency on Dapper, Microsoft.Data.SqlClient.**
+  `IRetryExecutor` is the retry abstraction.
 - **No shared mutable state.** Handlers are stateless; each invocation is a
   pure function of `command × ports`.
 - **No coupling to a specific mediator library.** The dispatcher is 60

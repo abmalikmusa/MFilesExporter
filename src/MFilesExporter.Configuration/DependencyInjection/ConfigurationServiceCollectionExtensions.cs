@@ -32,7 +32,6 @@ public static class ConfigurationServiceCollectionExtensions
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Source);
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Storage);
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Pipeline);
-        services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Resilience);
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.StateStore);
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.TrackingDatabase);
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.BatchProcessing);

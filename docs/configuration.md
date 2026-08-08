@@ -68,8 +68,7 @@ Exporter
 ├── SqlStreaming            # SqlDataReader / GetBytes tuning + BLOB timeout
 ├── Validation              # Post-export validation pipeline (7 validators)
 ├── Checkpoint              # WAL directory, fsync, SQL reconciliation
-├── Resilience              # (legacy) Polly named pipelines
-├── RetryHandling           # Enterprise retry engine (per-operation profiles)
+├── RetryHandling           # Retry engine (per-operation profiles + circuit breakers)
 └── Telemetry               # OpenTelemetry service name, Prometheus, OTLP
 ```
 
@@ -342,7 +341,6 @@ services.AddSingleton<IValidateOptions<ExporterOptions>>(sp =>
 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Source);
 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Storage);
 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Pipeline);
-services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Resilience);
 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.StateStore);
 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.TrackingDatabase);
 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.BatchProcessing);

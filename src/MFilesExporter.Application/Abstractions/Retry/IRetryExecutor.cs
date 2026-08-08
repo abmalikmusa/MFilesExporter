@@ -7,11 +7,6 @@ namespace MFilesExporter.Application.Abstractions.Retry;
 /// exponential back-off with jitter, and short-circuits through the category's
 /// circuit breaker when the downstream is deemed unhealthy.
 /// </summary>
-/// <remarks>
-/// Prefer this over calling <see cref="IResiliencePipelineProvider"/> directly.
-/// The lower-level provider is retained for callers that need a raw Polly
-/// pipeline; the executor is the enterprise-grade entry point.
-/// </remarks>
 public interface IRetryExecutor
 {
     /// <summary>Execute a value-returning operation under the profile named <paramref name="operationName"/>.</summary>

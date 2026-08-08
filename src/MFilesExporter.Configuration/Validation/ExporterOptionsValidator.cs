@@ -10,7 +10,6 @@ public sealed class ExporterOptionsValidator : AbstractValidator<ExporterOptions
         RuleFor(x => x.Source).NotNull().SetValidator(new MFilesSourceOptionsValidator());
         RuleFor(x => x.Storage).NotNull().SetValidator(new StorageOptionsValidator());
         RuleFor(x => x.Pipeline).NotNull().SetValidator(new PipelineOptionsValidator());
-        RuleFor(x => x.Resilience).NotNull();
         RuleFor(x => x.StateStore).NotNull().SetValidator(new StateStoreOptionsValidator());
         RuleFor(x => x.TrackingDatabase).NotNull().SetValidator(new TrackingDatabaseOptionsValidator());
         RuleFor(x => x.BatchProcessing).NotNull().SetValidator(new BatchProcessingOptionsValidator());

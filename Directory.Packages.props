@@ -56,9 +56,6 @@
          short-circuits the resolver to the patched 9.x line. -->
     <PackageVersion Include="System.Text.Json" Version="9.0.0" />
 
-    <!-- Resilience -->
-    <PackageVersion Include="Polly" Version="8.5.0" />
-
     <!-- Validation -->
     <PackageVersion Include="FluentValidation" Version="11.11.0" />
     <PackageVersion Include="FluentValidation.DependencyInjectionExtensions" Version="11.11.0" />

@@ -6,13 +6,13 @@
 |---|---|---|
 | **MFilesExporter.Domain** | Pure business types. No external references. | `DocumentDescriptor`, `DocumentFileVersionKey`, `DataFileVersionKey`, `IdempotencyKey`, `ExportOutcome`, `ExportStatus`, `ExportProgress` |
 | **MFilesExporter.Shared** | Cross-cutting primitives that are safe from every layer. | `Guard`, `CollectionExtensions`, `FileSystemHelpers` |
-| **MFilesExporter.Configuration** | Strongly-typed options and their FluentValidation validators. | `ExporterOptions`, `MFilesSourceOptions`, `StorageOptions`, `PipelineOptions`, `ResilienceOptions`, `StateStoreOptions`, `TelemetryOptions`, `ExporterOptionsValidator` |
+| **MFilesExporter.Configuration** | Strongly-typed options and their FluentValidation validators. | `ExporterOptions`, `MFilesSourceOptions`, `StorageOptions`, `PipelineOptions`, `RetryHandlingOptions`, `StateStoreOptions`, `TelemetryOptions`, `ExporterOptionsValidator` |
 | **MFilesExporter.Logging** | Serilog composition and host integration. | `SerilogBootstrap` |
 | **MFilesExporter.Application** | Use cases + ports. No I/O, no adapters. | `RunExportHandler`, `IApplicationDispatcher`, `IDocumentEnumerator`, `IDocumentContentReader`, `IDocumentSink`, `IExportStateStore`, `IManifestWriter`, `IExportPipeline`, `IJobContext`, `IProgressReporter`, `IClock`, `IChecksumCalculator`, `IRetryExecutor` |
 | **MFilesExporter.Persistence** | Adapters for durable stores. | `MFilesQueries`, `SqlConnectionFactory`, `MFilesSqlDocumentEnumerator`, `MFilesSqlContentReader`, `SqliteStateStore` |
 | **MFilesExporter.Export** | Streaming extraction machinery. | `PipelineChannels`, `ProducerStage`, `ContentReaderStage`, `SinkStage`, `OutcomeCollectorStage`, `ExportPipeline`, `PathBuilder`, `FileSystemDocumentSink`, `JsonLinesManifestWriter`, `Sha256ChecksumCalculator`, `PipelineTelemetry` |
 | **MFilesExporter.Reporting** | Progress reporting + Spectre.Console dashboard. | `LoggingProgressReporter`, `ProgressPublisherHostedService`, `DashboardStateSource`, `DashboardRenderer`, `ConsoleDashboardHostedService`, `WorkerActivityFeed`, `RetryCounterObserver`, `TotalExpectedFromJobRepository` |
-| **MFilesExporter.Infrastructure** | Cross-cutting adapters (resilience, clock, telemetry, health). | `ResiliencePipelineFactory`, `SystemClock`, `OpenTelemetryHostingExtensions`, `MFilesSqlHealthCheck`, `StateStoreHealthCheck`, `StorageHealthCheck` |
+| **MFilesExporter.Infrastructure** | Cross-cutting adapters (retry executor, clock, telemetry, health). | `RetryExecutor`, `ExceptionClassifier`, `SystemClock`, `OpenTelemetryHostingExtensions`, `MFilesSqlHealthCheck`, `StateStoreHealthCheck`, `StorageHealthCheck` |
 | **MFilesExporter.Console** | Composition root and process host. | `Program.cs`, `ExportHostedService` |
 | **MFilesExporter.Tests** | Unit, integration, and architecture-rule tests. | `IdempotencyKeyTests`, `MFilesQueriesTests`, `SqliteStateStoreTests`, `FileSystemDocumentSinkTests`, `ArchitectureRulesTests` |
 
@@ -50,7 +50,7 @@ Examples:
 - `MFilesExporter.Application.Abstractions`
 - `MFilesExporter.Persistence.MFiles`
 - `MFilesExporter.Export.Pipeline`
-- `MFilesExporter.Infrastructure.Resilience`
+- `MFilesExporter.Infrastructure.Retry`
 
 ## NuGet packages
 
@@ -60,7 +60,6 @@ Managed centrally via `Directory.Packages.props`. Categories:
 - **Hosting/DI/Options** — `Microsoft.Extensions.Hosting`, `Microsoft.Extensions.DependencyInjection*`, `Microsoft.Extensions.Options*`, `Microsoft.Extensions.Configuration*`
 - **Logging** — `Serilog.*` (bootstrap + host + async + file + console + compact JSON + enrichers)
 - **Telemetry** — `OpenTelemetry`, `OpenTelemetry.Extensions.Hosting`, `OpenTelemetry.Exporter.Prometheus.HttpListener`, `OpenTelemetry.Exporter.OpenTelemetryProtocol`, `OpenTelemetry.Instrumentation.Runtime`
-- **Resilience** — `Polly`
 - **Validation** — `FluentValidation`
 - **Testing** — `xunit`, `xunit.runner.visualstudio`, `FluentAssertions`, `NSubstitute`, `coverlet.collector`, `NetArchTest.Rules`
 

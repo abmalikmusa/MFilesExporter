@@ -10,7 +10,6 @@ public sealed class ExporterOptions
     public MFilesSourceOptions Source { get; set; } = new();
     public StorageOptions Storage { get; set; } = new();
     public PipelineOptions Pipeline { get; set; } = new();
-    public ResilienceOptions Resilience { get; set; } = new();
     public StateStoreOptions StateStore { get; set; } = new();
     public TrackingDatabaseOptions TrackingDatabase { get; set; } = new();
     public BatchProcessingOptions BatchProcessing { get; set; } = new();

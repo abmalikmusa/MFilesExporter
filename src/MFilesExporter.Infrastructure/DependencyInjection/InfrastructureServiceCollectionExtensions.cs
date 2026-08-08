@@ -4,7 +4,6 @@ using MFilesExporter.Application.Abstractions.Retry;
 using MFilesExporter.Configuration.Options;
 using MFilesExporter.Infrastructure.HealthChecks;
 using MFilesExporter.Infrastructure.Monitoring;
-using MFilesExporter.Infrastructure.Resilience;
 using MFilesExporter.Infrastructure.Retry;
 using MFilesExporter.Infrastructure.Telemetry;
 using MFilesExporter.Infrastructure.Time;
@@ -20,7 +19,6 @@ public static class InfrastructureServiceCollectionExtensions
         ArgumentNullException.ThrowIfNull(telemetry);
 
         services.AddSingleton<IClock, SystemClock>();
-        services.AddSingleton<IResiliencePipelineProvider, ResiliencePipelineFactory>();
 
         services.AddSingleton<IFailureClassifier, ExceptionClassifier>();
         services.AddSingleton<IRetryObserver, LoggingRetryObserver>();

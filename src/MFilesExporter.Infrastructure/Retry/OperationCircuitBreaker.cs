@@ -8,12 +8,11 @@ namespace MFilesExporter.Infrastructure.Retry;
 /// </summary>
 /// <remarks>
 /// <para>
-/// This is a hand-rolled implementation rather than Polly's built-in
-/// <c>ResilienceStrategyBuilder.AddCircuitBreaker</c> because the retry
-/// executor already owns the attempt loop — layering another Polly pipeline
-/// on top duplicates cancellation handling and hides state transitions from
-/// our observer. This class exposes the raw state so the executor can
-/// short-circuit and callers can inspect the breaker for health checks.
+/// Hand-rolled rather than delegated to a third-party resilience library
+/// because the retry executor already owns the attempt loop — layering
+/// another pipeline on top would duplicate cancellation handling and hide
+/// state transitions from our observer. Raw state is exposed so the
+/// executor can short-circuit and health checks can inspect the breaker.
 /// </para>
 /// <para>Thread-safety: all mutations happen under <c>_lock</c>. Reads are cheap.</para>
 /// </remarks>
