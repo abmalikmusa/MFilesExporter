@@ -18,7 +18,6 @@ public sealed class ExporterOptions
     public MetadataOptions Metadata { get; set; } = new();
     public ExportValidationOptions Validation { get; set; } = new();
     public CheckpointOptions Checkpoint { get; set; } = new();
-    public ParallelProcessingOptions ParallelProcessing { get; set; } = new();
     public RetryHandlingOptions RetryHandling { get; set; } = new();
     public TelemetryOptions Telemetry { get; set; } = new();
     public DashboardOptions Dashboard { get; set; } = new();

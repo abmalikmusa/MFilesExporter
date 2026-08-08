@@ -86,7 +86,7 @@ Colours in the real render:
                                         ┌────────────────────────────────┐  │
                                         │ ITotalExpectedSource (opt.)    │──┤   ┌────────────────────┐
                                         │ IRetryCounterSource  (opt.)    │──┤──▶│ DashboardState-    │
-                                        │ IBatchProgressSource (opt.)    │──┤   │ Source             │──┐
+                                        │                                │──┤   │ Source             │──┐
                                         └────────────────────────────────┘  │   └────────────────────┘  │
                                         ┌────────────────────────────────┐  │                            ▼
                                         │ SystemResourceSampler          │──┘             ┌───────────────────────────┐
@@ -111,7 +111,6 @@ out. Everything time-varying lives in the state source.
 |--------------------------------------|-----------------------------|------|
 | `IWorkerActivityFeed`                | `Application.Abstractions`  | Pipeline stages push per-worker updates. |
 | `IDashboardStateSource`              | `Application.Abstractions`  | Aggregated pull-based snapshot. |
-| `IBatchProgressSource`               | `Application.Abstractions`  | Optional — batch id + progress. |
 | `ITotalExpectedSource`               | `Application.Abstractions`  | Optional — authoritative expected count. |
 | `IRetryCounterSource`                | `Application.Abstractions`  | Optional — total retries. |
 | `WorkerActivityFeed`                 | `Reporting.Dashboard`       | In-memory feed. |

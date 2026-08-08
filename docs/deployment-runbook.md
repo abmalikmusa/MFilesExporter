@@ -232,10 +232,6 @@ Edit `D:\Services\MFilesExporter\appsettings.json`. Use **absolute paths**.
     "ContentReaderConcurrency": 16,
     "SinkConcurrency": 16
   },
-  "ParallelProcessing": {
-    "WorkerCount": 16,
-    "ChannelCapacity": 256
-  },
   "Dashboard": {
     "Enabled": false     // no TTY under a Windows Service
   },
@@ -257,9 +253,8 @@ MFILESEXPORTER_Exporter__TrackingDatabase__ConnectionString=…
 
 Full field reference: [docs/configuration.md](configuration.md).
 
-**Tune `WorkerCount` and `Concurrency`** to your box: rule of thumb is
-`min(physical cores, 16)` for the parallel-processing engine and the same
-for `ContentReaderConcurrency` / `SinkConcurrency`. Higher numbers help
+**Tune `ContentReaderConcurrency` and `SinkConcurrency`** to your box:
+rule of thumb is `min(physical cores, 16)` for each. Higher numbers help
 only when the source DB and disk are keeping up.
 
 ---
@@ -413,13 +408,13 @@ Schedule it every 5–10 minutes via Task Scheduler.
 | Tail live log                 | `Get-Content …\logs\mfilesexporter-*.log -Tail 50 -Wait` |
 | Tail errors only              | `Get-Content …\logs\errors-*.log -Tail 20 -Wait`     |
 | Change log level              | Edit `Serilog:MinimumLevel:Default` → restart        |
-| Change worker count           | Edit `Exporter:ParallelProcessing:WorkerCount` → restart |
+| Change worker count           | Edit `Exporter:Pipeline:ContentReaderConcurrency` / `SinkConcurrency` → restart |
 | Bump graceful-stop timeout    | `sc.exe control MFilesExporter --timeout 120000`     |
 
 Stopping the service is **safe at any time**: the checkpoint engine
-flushes the WAL, in-flight work drains within
-`Exporter:ParallelProcessing:GracefulShutdownTimeout` (default 30 s),
-and the next start resumes from exactly where it left off.
+flushes the WAL, in-flight work drains within the host's
+`HostOptions.ShutdownTimeout` (default 30 s), and the next start resumes
+from exactly where it left off.
 
 ---
 
@@ -468,7 +463,7 @@ touched** — remove them manually only if you're decommissioning.
 | `Access is denied` on `http://+:9464/`                      | URL ACL not registered for the service account                                          | Re-run `install.ps1` or `netsh http add urlacl url=http://+:9464/ user=<ACCOUNT>` |
 | `--status` prints "connection string not configured"        | `Exporter:TrackingDatabase:ConnectionString` missing                                     | Set in `appsettings.json` or `MFILESEXPORTER_Exporter__TrackingDatabase__ConnectionString` |
 | `--status` returns no rows                                  | No job in `Running` state; the exporter isn't started, or the last run has completed    | `Get-Service MFilesExporter` + inspect `dbo.ExportJobs`; use `07-active-jobs.sql` |
-| Service takes > 30 s to stop                                | In-flight BLOB reads exceed `GracefulShutdownTimeout`                                    | Increase `Exporter:ParallelProcessing:GracefulShutdownTimeout` AND the SCM timeout (`sc.exe control … --timeout`) |
+| Service takes > 30 s to stop                                | In-flight BLOB reads exceed the host shutdown timeout                                    | Raise `HostOptions.ShutdownTimeout` in Program.cs AND the SCM timeout (`sc.exe control … --timeout`) |
 | `SqlDeadlock` failures dominate `03-failures-by-category`   | Vault DB contention with another workload                                                | Reduce `Pipeline:ContentReaderConcurrency`; verify `UseReadUncommittedForEnumeration: true` |
 | Disk-free gauge dropping fast                               | Output volume too small for the export estimate                                          | Move `Storage:RootPath` to a larger volume, or turn on compression at the FS layer |
 | Multiple stalled workers                                    | Vault DB unreachable, network partition, disk write starvation                          | Check `06-worker-health.sql`; correlate with error log |

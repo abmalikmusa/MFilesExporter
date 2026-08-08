@@ -102,8 +102,6 @@ public sealed class ExporterTestHost : IAsyncDisposable
             ["Exporter:Pipeline:OutcomeBatchSize"]               = "5",
             ["Exporter:Pipeline:OutcomeBatchFlushInterval"]      = "00:00:00.500",
             ["Exporter:Pipeline:CheckpointFlushInterval"]        = "00:00:00.500",
-            ["Exporter:ParallelProcessing:WorkerCount"]          = workerCount.ToString(),
-            ["Exporter:ParallelProcessing:ChannelCapacity"]      = "64",
             ["Exporter:Dashboard:Enabled"]                       = "false",
             ["Exporter:Telemetry:EnablePrometheusEndpoint"]      = "false",
             ["Exporter:Telemetry:EnableOtlpExporter"]            = "false",

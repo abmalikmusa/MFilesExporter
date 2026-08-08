@@ -9,7 +9,6 @@ using MFilesExporter.Export.Pipeline;
 using MFilesExporter.Export.Storage;
 using MFilesExporter.Export.Checkpointing;
 using MFilesExporter.Export.Checkpointing.WriteAheadLog;
-using MFilesExporter.Export.Parallel;
 using MFilesExporter.Export.Validation;
 using MFilesExporter.Export.Validation.Reporting;
 using MFilesExporter.Export.Validation.Validators;
@@ -62,24 +61,6 @@ public static class ExportServiceCollectionExtensions
         services.AddSingleton<ICheckpointWal, FileCheckpointWal>();
         services.AddSingleton<ICheckpointEngine, CheckpointEngine>();
 
-        // Parallel processing engine — health monitor is a shared singleton;
-        // engine and hosted-service registrations are added per TItem by
-        // consumers via AddParallelProcessing<TItem>() below.
-        services.AddSingleton<WorkerHealthMonitor>();
-
-        return services;
-    }
-
-    /// <summary>
-    /// Registers a strongly-typed parallel processing engine for the given
-    /// <typeparamref name="TItem"/>. Register once per item type. Consumers
-    /// still register their own <see cref="IParallelWorker{TItem}"/>.
-    /// </summary>
-    public static IServiceCollection AddParallelProcessing<TItem>(this IServiceCollection services)
-    {
-        ArgumentNullException.ThrowIfNull(services);
-        services.AddSingleton<IParallelProcessingEngine<TItem>, ParallelProcessingEngine<TItem>>();
-        services.AddHostedService<ParallelProcessingHostedService<TItem>>();
         return services;
     }
 }

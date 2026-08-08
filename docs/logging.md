@@ -107,7 +107,7 @@ await _audit.WriteAsync(
 
 ## 7. Worker logs
 
-Every parallel-processing worker enters a scope on startup:
+Every pipeline worker enters a scope on startup:
 
 ```csharp
 public async Task RunWorkerAsync(int workerId, CancellationToken ct)

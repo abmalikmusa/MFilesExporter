@@ -34,7 +34,6 @@ MFILESEXPORTER_Exporter__Source__ConnectionString="Server=vault-db;Database=MFil
 MFILESEXPORTER_Exporter__TrackingDatabase__ConnectionString="Server=tracking-db;Database=MFilesExportTracking;Integrated Security=True;"
 MFILESEXPORTER_Exporter__Storage__RootPath="/data/export/documents"
 MFILESEXPORTER_Exporter__Pipeline__ContentReaderConcurrency=16
-MFILESEXPORTER_Exporter__ParallelProcessing__WorkerCount=16
 MFILESEXPORTER_Exporter__BatchProcessing__BatchSize=2000
 MFILESEXPORTER_Exporter__RetryHandling__SqlRead__MaxAttempts=8
 ```
@@ -64,7 +63,6 @@ Exporter
 ├── Metadata                # CSV / JSON / manifest emission
 ├── Pipeline                # Channel capacities + stage concurrency + timers
 ├── BatchProcessing         # Batch size, per-batch parallelism, failure gates
-├── ParallelProcessing      # Worker-pool engine (channels + workers)
 ├── SqlStreaming            # SqlDataReader / GetBytes tuning + BLOB timeout
 ├── Validation              # Post-export validation pipeline (7 validators)
 ├── Checkpoint              # WAL directory, fsync, SQL reconciliation
@@ -200,21 +198,7 @@ Type: `BatchProcessingOptions`.
 | `FailureRateThreshold`    | `0.5`  | Stops the run when per-batch failures exceed this ratio. `1.0` disables. |
 | `StopOnFirstFailure`      | `false`| Rarely appropriate — use failure-rate threshold instead. |
 
-### 4.9 `Exporter:ParallelProcessing` — worker-pool engine
-
-Type: `ParallelProcessingOptions`.
-
-| Field | Default | Meaning |
-|-------|---------|---------|
-| `WorkerCount`             | `8`     | Concurrent worker tasks. |
-| `ChannelCapacity`         | `128`   | Bounded input channel. Set to a small multiple of `WorkerCount`. |
-| `FullMode`                | `Wait`  | Back-pressure. Alternatives: `DropOldest`, `DropNewest`. |
-| `HeartbeatInterval`       | `00:00:05` | Worker heartbeat cadence. |
-| `StalledThreshold`        | `00:00:30` | Must be > `HeartbeatInterval` (rule enforced). |
-| `GracefulShutdownTimeout` | `00:00:30` | How long to wait for in-flight work at stop. |
-| `RestartWorkersOnFault`   | `false` | Off by default — unhandled exceptions usually indicate bugs. |
-
-### 4.10 `Exporter:SqlStreaming` — SQL streaming engine
+### 4.9 `Exporter:SqlStreaming` — SQL streaming engine
 
 Type: `SqlStreamingOptions`.
 
@@ -230,7 +214,7 @@ Type: `SqlStreamingOptions`.
 | `RetryBaseDelay`                    | `250 ms`| Exponential backoff base. |
 | `RetryMaxDelay`                     | `30 s`  | Exponential backoff ceiling. |
 
-### 4.11 `Exporter:Validation` — post-export validators
+### 4.10 `Exporter:Validation` — post-export validators
 
 Type: `ExportValidationOptions`. See `docs/export-validation-framework.md`.
 
@@ -316,8 +300,6 @@ rather than fixing one field per restart.
 
 Some invariants span more than one field:
 
-- `ParallelProcessing.StalledThreshold` must exceed `HeartbeatInterval` —
-  otherwise a single missed beat marks a worker as stalled.
 - `Telemetry.OtlpEndpoint` is required when `Telemetry.EnableOtlpExporter`
   is true — validated via `When(...)`.
 - `Telemetry.PrometheusListenerUrl` is required when
@@ -349,7 +331,6 @@ services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().V
 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Metadata);
 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Validation);
 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Checkpoint);
-services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.ParallelProcessing);
 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.RetryHandling);
 services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Telemetry);
 ```
@@ -423,14 +404,6 @@ make refactoring safer and unit tests easier.
       "MaxParallelismPerBatch": 16,
       "BatchTimeout": "00:30:00",
       "FailureRateThreshold": 0.25
-    },
-
-    "ParallelProcessing": {
-      "WorkerCount": 16,
-      "ChannelCapacity": 256,
-      "HeartbeatInterval": "00:00:05",
-      "StalledThreshold": "00:00:30",
-      "GracefulShutdownTimeout": "00:00:60"
     },
 
     "SqlStreaming": {

@@ -133,7 +133,6 @@ Every subsystem has a dedicated design doc.
 - [Application layer](docs/application-layer.md) — CQRS dispatcher, use cases
 - [Work-claiming engine](docs/work-claiming-engine.md) — fencing tokens
 - [Batch processing engine](docs/batch-processing-engine.md)
-- [Parallel processing engine](docs/parallel-processing-engine.md) — worker pool + channels
 
 **Export & durability**
 - [File export engine](docs/file-export-engine.md) — folder strategies + duplicate resolution
@@ -171,7 +170,6 @@ time — the process refuses to start on invalid config.
   "Metadata":           { "WriteCsv": true, "WriteJson": true, "WriteManifest": true },
   "Pipeline":           { "ContentReaderConcurrency": 16, "SinkConcurrency": 16 },
   "BatchProcessing":    { "BatchSize": 2000, "MaxParallelismPerBatch": 16 },
-  "ParallelProcessing": { "WorkerCount": 16, "ChannelCapacity": 256 },
   "SqlStreaming":       { "FetchSize": 1000, "BlobCommandTimeoutSeconds": 600 },
   "Validation":         { "Enabled": true, "Mode": "FailFast" },
   "Checkpoint":         { "WalDirectory": "/data/checkpoints", "FsyncOnWrite": true },

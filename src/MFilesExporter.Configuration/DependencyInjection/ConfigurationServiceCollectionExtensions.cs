@@ -40,7 +40,6 @@ public static class ConfigurationServiceCollectionExtensions
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Metadata);
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Validation);
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Checkpoint);
-        services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.ParallelProcessing);
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.RetryHandling);
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Telemetry);
         services.AddSingleton(sp => sp.GetRequiredService<IOptions<ExporterOptions>>().Value.Dashboard);

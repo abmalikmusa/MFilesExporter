@@ -75,12 +75,11 @@ Rule of thumb from experience with similar pipelines: expect **2–3× the dev-b
 
 Configuration knobs most likely to matter, in decreasing order of impact:
 
-1. **`Exporter:ParallelProcessing:WorkerCount`** — start with `min(cpu_cores, 16)`. Higher only helps if the target SQL Server saturates its CPU last.
-2. **`Exporter:Pipeline:ContentReaderConcurrency`** and **`SinkConcurrency`** — the two channel-consumer counts. Keep them equal to `WorkerCount` unless disk write is the bottleneck (then lower `SinkConcurrency`) or SQL BLOB reads are (then raise `ContentReaderConcurrency`).
-3. **`Exporter:SqlStreaming:FetchSize`** — 1 000 is a good default. Larger means fewer round-trips but more memory per page; smaller means finer-grained producer→consumer flow.
-4. **`Exporter:Source:EnumerationBatchSize`** — the SQL top-N page size. Matches `FetchSize` in practice.
-5. **`Exporter:Pipeline:OutcomeBatchSize`** — 200 is a good default. Larger reduces tracking-DB round-trips at the cost of longer at-risk window on cancel.
-6. **`Exporter:FileExport:FsyncOnWrite`** — off in dev, **on in prod**. This is the durability guarantee; leaving it off is a data-loss risk.
+1. **`Exporter:Pipeline:ContentReaderConcurrency`** and **`SinkConcurrency`** — the two channel-consumer counts. Start at `min(cpu_cores, 16)`; lower `SinkConcurrency` if disk-write is the bottleneck, raise `ContentReaderConcurrency` if SQL BLOB reads are.
+2. **`Exporter:SqlStreaming:FetchSize`** — 1 000 is a good default. Larger means fewer round-trips but more memory per page; smaller means finer-grained producer→consumer flow.
+3. **`Exporter:Source:EnumerationBatchSize`** — the SQL top-N page size. Matches `FetchSize` in practice.
+4. **`Exporter:Pipeline:OutcomeBatchSize`** — 200 is a good default. Larger reduces tracking-DB round-trips at the cost of longer at-risk window on cancel.
+5. **`Exporter:FileExport:FsyncOnWrite`** — off in dev, **on in prod**. This is the durability guarantee; leaving it off is a data-loss risk.
 
 ## When to remeasure
 

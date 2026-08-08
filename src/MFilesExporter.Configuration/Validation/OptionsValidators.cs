@@ -69,24 +69,6 @@ public sealed class MetadataOptionsValidator : AbstractValidator<MetadataOptions
     }
 }
 
-public sealed class ParallelProcessingOptionsValidator : AbstractValidator<ParallelProcessingOptions>
-{
-    public ParallelProcessingOptionsValidator()
-    {
-        RuleFor(x => x.WorkerCount).InclusiveBetween(1, 512);
-        RuleFor(x => x.ChannelCapacity).GreaterThan(0);
-        RuleFor(x => x.HeartbeatInterval).Must(t => t > TimeSpan.Zero)
-            .WithMessage("HeartbeatInterval must be greater than zero.");
-        RuleFor(x => x.StalledThreshold).Must(t => t > TimeSpan.Zero)
-            .WithMessage("StalledThreshold must be greater than zero.");
-        RuleFor(x => x.GracefulShutdownTimeout).Must(t => t >= TimeSpan.Zero)
-            .WithMessage("GracefulShutdownTimeout cannot be negative.");
-        RuleFor(x => x)
-            .Must(x => x.StalledThreshold > x.HeartbeatInterval)
-            .WithMessage("StalledThreshold must exceed HeartbeatInterval so a single missed beat does not mark the worker stalled.");
-    }
-}
-
 public sealed class RetryHandlingOptionsValidator : AbstractValidator<RetryHandlingOptions>
 {
     public RetryHandlingOptionsValidator()

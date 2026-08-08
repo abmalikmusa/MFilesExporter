@@ -15,7 +15,6 @@ public sealed class DashboardStateSource : IDashboardStateSource
 {
     private readonly IExportStateStore _stateStore;
     private readonly IWorkerActivityFeed _workers;
-    private readonly IBatchProgressSource? _batch;
     private readonly SystemResourceSampler _resources;
     private readonly IClock _clock;
     private readonly MFilesSourceOptions _sourceOptions;
@@ -33,7 +32,6 @@ public sealed class DashboardStateSource : IDashboardStateSource
         IClock clock,
         MFilesSourceOptions sourceOptions,
         StorageOptions storage,
-        IBatchProgressSource? batch = null,
         ITotalExpectedSource? expected = null,
         IRetryCounterSource? retries = null)
     {
@@ -43,7 +41,6 @@ public sealed class DashboardStateSource : IDashboardStateSource
         _clock         = clock;
         _sourceOptions = sourceOptions;
         _storage       = storage;
-        _batch         = batch;
         _expected      = expected;
         _retries       = retries;
     }
@@ -88,9 +85,6 @@ public sealed class DashboardStateSource : IDashboardStateSource
             DocumentsPerSecond    = docsPerSec,
             MegabytesPerSecond    = mibPerSec,
             EtaSeconds            = eta,
-            CurrentBatchId        = _batch?.CurrentBatchId,
-            CurrentBatchSize      = _batch?.CurrentBatchSize ?? 0,
-            CurrentBatchProcessed = _batch?.CurrentBatchProcessed ?? 0,
             Workers               = _workers.Snapshot(),
             ProcessMemoryBytes    = mem,
             CpuUsagePercent       = cpu,

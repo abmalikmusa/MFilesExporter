@@ -119,16 +119,6 @@ public class ExporterOptionsValidatorTests
     }
 
     [Fact]
-    public void ParallelProcessing_HeartbeatGtStalled_Fails()
-    {
-        var o = Valid();
-        o.ParallelProcessing.HeartbeatInterval = TimeSpan.FromSeconds(30);
-        o.ParallelProcessing.StalledThreshold  = TimeSpan.FromSeconds(5);
-        new ExporterOptionsValidator().TestValidate(o)
-            .ShouldHaveValidationErrorFor("ParallelProcessing");
-    }
-
-    [Fact]
     public void Telemetry_OtlpEnabledWithoutEndpoint_Fails()
     {
         var o = Valid();

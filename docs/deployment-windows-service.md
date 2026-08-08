@@ -167,15 +167,14 @@ Health signals:
 
 `Stop-Service MFilesExporter` sends SCM's `SERVICE_CONTROL_STOP`, which the
 Generic Host converts to a `CancellationToken` cancel on the application
-lifetime. Every background service (pipeline, checkpoint, progress,
-parallel processing) honours the token: in-flight work drains, the
-checkpoint engine flushes its WAL, tracking-DB writes are committed, and
-the process exits.
+lifetime. Every background service (pipeline, checkpoint, progress)
+honours the token: in-flight work drains, the checkpoint engine flushes
+its WAL, tracking-DB writes are committed, and the process exits.
 
-The **graceful-shutdown budget** is
-`Exporter:ParallelProcessing:GracefulShutdownTimeout` (default 30 s) —
-tune this if your BLOB reads regularly exceed it. Setting it larger than
-the SCM's default stop timeout of 30 s requires bumping the SCM value too:
+The **graceful-shutdown budget** is the generic host's
+`HostOptions.ShutdownTimeout` (default 30 s) — tune this in `Program.cs`
+if your BLOB reads regularly exceed it. Setting it larger than the SCM's
+default stop timeout of 30 s requires bumping the SCM value too:
 
 ```powershell
 sc.exe control MFilesExporter --timeout 120000   # 120 s
@@ -212,7 +211,7 @@ rather than reinstalling.
 |--------------------------------------------------------------|----------------------------------------------------------------------------------------|-----|
 | Service starts then immediately stops                        | Invalid `appsettings.json` — validation runs at startup, throws, host exits            | Check `logs/mfilesexporter-*.log` for the FluentValidation errors |
 | `Access is denied` on `http://+:9464/`                       | URL not reserved for the service account                                               | Re-run `install.ps1` or `netsh http add urlacl url=http://+:9464/ user=…` |
-| Service takes > 30 s to stop                                 | In-flight BLOB reads exceed `GracefulShutdownTimeout`                                  | Increase both `Exporter:ParallelProcessing:GracefulShutdownTimeout` and the SCM timeout |
+| Service takes > 30 s to stop                                 | In-flight BLOB reads exceed the host shutdown timeout                                  | Raise `HostOptions.ShutdownTimeout` in Program.cs AND the SCM timeout |
 | Cannot access source vault under NetworkService              | NetworkService has no domain identity                                                  | Reinstall with `-ServiceAccount "DOMAIN\svc-mfiles"` |
 | Relative paths (`./export-output`) resolved to `%WINDIR%\System32` | Old .NET service without ContentRoot fix                                          | Confirm you're on this build — `Program.cs` sets ContentRoot when `IsWindowsService()` is true |
 | Prometheus scrape times out                                  | Firewall blocks 9464 inbound                                                           | `New-NetFirewallRule -DisplayName "MFilesExporter Metrics" -Direction Inbound -LocalPort 9464 -Protocol TCP -Action Allow` |

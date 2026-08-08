@@ -42,12 +42,8 @@ public sealed record DashboardSnapshot
     public double? EtaSeconds { get; init; }
 
     // ---------------------------------------------------------------------
-    // Batch + worker activity
+    // Worker activity
     // ---------------------------------------------------------------------
-    public string? CurrentBatchId { get; init; }
-    public long CurrentBatchSize { get; init; }
-    public long CurrentBatchProcessed { get; init; }
-
     public required IReadOnlyList<WorkerActivityEntry> Workers { get; init; }
 
     // ---------------------------------------------------------------------

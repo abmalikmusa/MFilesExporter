@@ -133,11 +133,6 @@ public sealed class DashboardRenderer
 
     private IRenderable BuildCurrentPanel(DashboardSnapshot s)
     {
-        var batchId = s.CurrentBatchId ?? "—";
-        var batchLine = s.CurrentBatchSize > 0
-            ? $"[bold]{batchId}[/]  [grey]{s.CurrentBatchProcessed:N0}/{s.CurrentBatchSize:N0}[/]"
-            : $"[bold]{batchId}[/]";
-
         var busy = s.Workers.FirstOrDefault(w => w.State == WorkerActivityState.Busy);
         var docLine = busy is null
             ? "[dim]waiting for work…[/]"
@@ -145,8 +140,6 @@ public sealed class DashboardRenderer
 
         var grid = new Grid()
             .AddColumn()
-            .AddRow(new Markup("[grey]current batch[/]"))
-            .AddRow(new Markup(batchLine))
             .AddRow(new Markup("[grey]current document[/]"))
             .AddRow(new Markup(docLine));
 

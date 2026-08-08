@@ -18,7 +18,6 @@ public sealed class ExporterOptionsValidator : AbstractValidator<ExporterOptions
         RuleFor(x => x.Metadata).NotNull().SetValidator(new MetadataOptionsValidator());
         RuleFor(x => x.Validation).NotNull().SetValidator(new ExportValidationOptionsValidator());
         RuleFor(x => x.Checkpoint).NotNull().SetValidator(new CheckpointOptionsValidator());
-        RuleFor(x => x.ParallelProcessing).NotNull().SetValidator(new ParallelProcessingOptionsValidator());
         RuleFor(x => x.RetryHandling).NotNull().SetValidator(new RetryHandlingOptionsValidator());
         RuleFor(x => x.Telemetry).NotNull().SetValidator(new TelemetryOptionsValidator());
         RuleFor(x => x.Dashboard).NotNull().SetValidator(new DashboardOptionsValidator());
